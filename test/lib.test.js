@@ -93,7 +93,7 @@ test('esc and attrs escape output', () => {
 test('slugify folds Swedish characters', () => {
   assert.equal(slugify('Produktion & Utveckling'), 'produktion-utveckling');
   assert.equal(slugify('Mjölby ÅÄÖ'), 'mjolby-aao');
-  assert.equal(slugify(''), 'sida');
+  assert.equal(slugify(''), 'page');
 });
 
 test('normalizePermalink produces clean paths', () => {
@@ -103,13 +103,18 @@ test('normalizePermalink produces clean paths', () => {
   assert.equal(normalizePermalink('///a//b//'), '/a/b');
 });
 
-test('normalizePhone assumes Sweden', () => {
-  assert.equal(normalizePhone('070-123 45 67'), '+46701234567');
-  assert.equal(normalizePhone('0046 70 1234567'), '+46701234567');
+test('normalizePhone reads a bare number as local to the country it is given', () => {
+  assert.equal(normalizePhone('070-123 45 67', '46'), '+46701234567');
+  assert.equal(normalizePhone('020 7946 0958', '44'), '+442079460958');
+  // Written with its own country, a number keeps it whatever the default.
+  assert.equal(normalizePhone('0046 70 1234567', '44'), '+46701234567');
   assert.equal(normalizePhone('+46701234567'), '+46701234567');
   assert.equal(normalizePhone(''), '');
-  assert.ok(isPhone('070-1234567'));
-  assert.ok(!isPhone('12'));
+  // With no country to read it in, a bare number cannot be placed.
+  assert.equal(normalizePhone('070-123 45 67'), '');
+  assert.ok(isPhone('070-1234567', '46'));
+  assert.ok(!isPhone('070-1234567'));
+  assert.ok(!isPhone('12', '46'));
 });
 
 test('isEmail accepts real addresses only', () => {
@@ -208,16 +213,16 @@ test('a near date is said in words, an old one is dated', () => {
   const at = (y, m, d, h = 12, min = 0) =>
     new Date(Date.UTC(y, m, d, h, min)).toISOString().slice(0, 19).replace('T', ' ');
 
-  assert.match(relativeDate(at(2026, 8, 10, 9, 5), 'sv-SE', now), /^Today \d{2}:\d{2}$/);
-  assert.equal(relativeDate(at(2026, 8, 9), 'sv-SE', now), 'Yesterday');
-  assert.equal(relativeDate(at(2026, 8, 7), 'sv-SE', now), '2026-09-07');
-  assert.equal(relativeDate('', 'sv-SE', now), '');
-  assert.equal(relativeDate(null, 'sv-SE', now), '');
+  assert.match(relativeDate(at(2026, 8, 10, 9, 5), undefined, now), /^Today \d{2}:\d{2}$/);
+  assert.equal(relativeDate(at(2026, 8, 9), undefined, now), 'Yesterday');
+  assert.equal(relativeDate(at(2026, 8, 7), undefined, now), '2026-09-07');
+  assert.equal(relativeDate('', undefined, now), '');
+  assert.equal(relativeDate(null, undefined, now), '');
 
   /* By calendar day, not by hours elapsed: something saved ten minutes before
      midnight is yesterday's work at ten past, not "twenty minutes ago". */
   const justAfterMidnight = new Date(2026, 8, 10, 0, 10, 0);
-  assert.equal(relativeDate(at(2026, 8, 9, 21, 50), 'sv-SE', justAfterMidnight), 'Yesterday');
+  assert.equal(relativeDate(at(2026, 8, 9, 21, 50), undefined, justAfterMidnight), 'Yesterday');
 });
 
 test('a phone number is stored as one dialable string', () => {
@@ -265,7 +270,7 @@ test('the country list is sound, and short one entry on purpose', () => {
 
   // Sorted the way the names read, which is not the way the codes sort.
   const names = list.map((c) => c.name);
-  assert.deepEqual(names, [...names].sort((a, b) => a.localeCompare(b, 'sv')));
+  assert.deepEqual(names, [...names].sort((a, b) => a.localeCompare(b, 'en')));
 
   // The flag is the code shifted into its own block, so the two cannot drift.
   assert.equal(flagFor('SE'), '\u{1F1F8}\u{1F1EA}');
@@ -1560,9 +1565,10 @@ test('subject chips are drawn only when the feed was asked for them', () => {
   const feed = { items: [oneArticle], hasMore: false, chips, active: 5, activeSlug: 'produktion' };
   const on = renderFeed({ filter: true }, feed);
   assert.match(on, /chip-row/);
-  assert.match(on, /kategori=produktion/);
-  // The chip standing for what is showing says so, and "Alla" then does not.
-  assert.match(on, /class="chip is-active"[^>]*href="\/nyheter\?kategori=produktion"/);
+  assert.match(on, /category=produktion/);
+  // The chip standing for what is showing says so, and "All" then does not.
+  assert.match(on, /class="chip is-active"[^>]*href="\/nyheter\?category=produktion"/);
+  assert.match(on, /<a class="chip" href="\/nyheter">All<\/a>/);
   assert.ok(!renderFeed({ filter: false }, feed).includes('chip-row'));
 });
 
@@ -1775,15 +1781,15 @@ test('a schedule is said as a day and a time', () => {
   const at = (y, m, d, h, min = 0) =>
     new Date(y, m, d, h, min).toISOString().slice(0, 19).replace('T', ' ');
 
-  assert.deepEqual(scheduleDate(at(2026, 8, 10, 15), 'sv-SE', now), { day: 'today', time: '15:00' });
-  assert.deepEqual(scheduleDate(at(2026, 8, 11, 8), 'sv-SE', now), { day: 'tomorrow', time: '08:00' });
-  assert.deepEqual(scheduleDate(at(2026, 8, 14, 8, 30), 'sv-SE', now), { day: 'Monday', time: '08:30' });
-  assert.deepEqual(scheduleDate(at(2026, 8, 17, 8), 'sv-SE', now), { day: '2026-09-17', time: '08:00' });
-  assert.equal(scheduleDate('', 'sv-SE', now), null);
+  assert.deepEqual(scheduleDate(at(2026, 8, 10, 15), undefined, now), { day: 'today', time: '15:00' });
+  assert.deepEqual(scheduleDate(at(2026, 8, 11, 8), undefined, now), { day: 'tomorrow', time: '08:00' });
+  assert.deepEqual(scheduleDate(at(2026, 8, 14, 8, 30), undefined, now), { day: 'Monday', time: '08:30' });
+  assert.deepEqual(scheduleDate(at(2026, 8, 17, 8), undefined, now), { day: '2026-09-17', time: '08:00' });
+  assert.equal(scheduleDate('', undefined, now), null);
 
   // By calendar day: half past midnight is tomorrow, however close it is.
   const lateEvening = new Date(2026, 8, 10, 23, 50);
-  assert.equal(scheduleDate(at(2026, 8, 11, 0, 30), 'sv-SE', lateEvening).day, 'tomorrow');
+  assert.equal(scheduleDate(at(2026, 8, 11, 0, 30), undefined, lateEvening).day, 'tomorrow');
 });
 
 test('a publish time is stored to the minute, and only if it is still ahead', () => {

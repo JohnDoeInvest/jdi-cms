@@ -94,7 +94,7 @@ export const kindOf = (mime) =>
  */
 export async function storeUpload({ filename, mime, data }) {
   const ext = EXT_BY_MIME[mime] || path.extname(filename || '').toLowerCase().replace(/[^.a-z0-9]/g, '') || '.bin';
-  const base = slugify(path.basename(filename || 'fil', path.extname(filename || '')), 'fil').slice(0, 60);
+  const base = slugify(path.basename(filename || 'file', path.extname(filename || '')), 'file').slice(0, 60);
   const stored = `${base}-${crypto.randomBytes(4).toString('hex')}${ext}`;
   fs.writeFileSync(path.join(config.paths.media, stored), data);
 

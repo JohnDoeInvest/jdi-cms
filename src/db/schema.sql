@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS users (
   -- the one-time code is the only way in.
   password_hash TEXT   NOT NULL DEFAULT '',
   image_id     INTEGER REFERENCES media(id) ON DELETE SET NULL,
-  country      TEXT    NOT NULL DEFAULT 'SE',
+  country      TEXT    NOT NULL DEFAULT '',
   address      TEXT    NOT NULL DEFAULT '',
   zip          TEXT    NOT NULL DEFAULT '',
   city         TEXT    NOT NULL DEFAULT '',

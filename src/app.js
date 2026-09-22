@@ -116,13 +116,13 @@ function handleError(err, req, res, next) {  // eslint-disable-line no-unused-va
      picker's fetch would otherwise fail to parse the answer and report
      nothing more useful than "upload failed". */
   if (req.path.startsWith('/cms/api/') || (req.headers.accept || '').includes('application/json')) {
-    return json(res, { error: err.message || 'Serverfel' }, status);
+    return json(res, { error: err.message || 'Server error' }, status);
   }
-  html(res, `<!doctype html><meta charset="utf-8"><title>Fel</title>
-    <body style="font-family:system-ui;padding:56px;max-width:640px;margin:auto;color:#1e1e1e">
-    <h1 style="letter-spacing:-.03em">${status === 404 ? 'Sidan hittades inte' : 'Något gick fel'}</h1>
-    <p style="color:#6b6b6b">${status >= 500 ? 'Ett oväntat fel inträffade. Detaljer finns i serverloggen.' : ''}</p>
-    <p><a href="/" style="color:#357abb">Till startsidan</a></p></body>`, status);
+  html(res, `<!doctype html><html lang="en"><meta charset="utf-8"><title>Error</title>
+    <body style="font-family:system-ui;padding:56px;max-width:640px;margin:auto;color:#17181a">
+    <h1 style="letter-spacing:-.03em">${status === 404 ? 'Page not found' : 'Something went wrong'}</h1>
+    <p style="color:#6b7076">${status >= 500 ? 'An unexpected error occurred. The details are in the server log.' : ''}</p>
+    <p><a href="/" style="color:#1b87e0">Go to the home page</a></p></body>`, status);
 }
 
 function logRequests(req, res, next) {

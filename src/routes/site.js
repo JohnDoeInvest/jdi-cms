@@ -94,12 +94,12 @@ function mediaFor(blocks) {
  * than by a second one counting the whole table.
  *
  * A subject chip narrows a feed within its own subjects and can never widen
- * it - a hand-typed `?kategori=` on a feed that lists Produktion and
- * Forskning cannot make it show Investerare.
+ * it - a hand-typed `?category=` on a feed that lists two subjects cannot
+ * make it show a third.
  */
 export function feedFor(props, ctx, offset = 0) {
   const own = props.categories || [];
-  const picked = ctx?.query?.kategori ? categories.bySlug(ctx.query.kategori) : null;
+  const picked = ctx?.query?.category ? categories.bySlug(ctx.query.category) : null;
   const active = picked && (!own.length || own.includes(picked.id)) ? picked : null;
   const size = props.limit || 3;
 
@@ -202,8 +202,8 @@ export function renderPage(page, ctx, flash = {}) {
     ? renderBlocks(blocks, renderCtx)
     : `<div class="empty-state">
          <h2>${esc(page.title)}</h2>
-         <p>Den här sidan har inget innehåll ännu. Lägg till slices och objekt i CMS:et.</p>
-         ${ctx.user ? `<p><a class="btn" href="/cms/pages/${page.id}/edit">Redigera sidan</a></p>` : ''}
+         <p>This page has no content yet. Add slices and objects to it in the CMS.</p>
+         ${ctx.user ? `<p><a class="btn" href="/cms/pages/${page.id}/edit">Edit this page</a></p>` : ''}
        </div>`;
 
   /* Three frames, and the page's own type says which.
@@ -252,7 +252,7 @@ export function renderPage(page, ctx, flash = {}) {
  * One article, at its own address.
  *
  * The trail is the parent page's trail with the article on the end, so an
- * article under Jobb & karriär reads Home > Jobb & karriär > Title - which is
+ * article under Careers reads Home > Careers > Title - which is
  * the whole point of an article living under a page rather than under a feed.
  */
 export function renderArticle(article, ctx) {
@@ -265,13 +265,13 @@ export function renderArticle(article, ctx) {
   // such page set they stay what they are: labels.
   const hub = ctx.settings?.article_parent ? pages.byId(ctx.settings.article_parent) : null;
   const subject = (c) => (hub
-    ? `<a class="tag" href="${esc(hub.permalink)}?kategori=${encodeURIComponent(c.slug)}">${esc(c.name)}</a>`
+    ? `<a class="tag" href="${esc(hub.permalink)}?category=${encodeURIComponent(c.slug)}">${esc(c.name)}</a>`
     : `<span class="tag">${esc(c.name)}</span>`);
 
   const related = articles.list({
     status: 'published',
-    // Any shared subject, not just the primary: a piece about Produktion and
-    // Jobb & karriär is relevant to readers of both.
+    // Any shared subject, not just the primary: a piece filed under two
+    // subjects is relevant to readers of both.
     categoryIds: (article.categories || []).map((c) => c.id),
     limit: 4,
   }).filter((a) => a.id !== article.id).slice(0, 3);
@@ -308,7 +308,7 @@ export function renderArticle(article, ctx) {
       ? `<p style="margin-top:var(--s-6)"><a class="btn btn--accent" href="${esc(article.cta_url)}">${esc(article.cta_label)}</a></p>`
       : ''}
     ${related.length ? `<section style="margin-top:var(--s-9)">
-      <h2 class="block-header" style="margin-bottom:var(--s-5)">Mer att läsa</h2>
+      <h2 class="block-header" style="margin-bottom:var(--s-5)">More to read</h2>
       <div class="card-grid">${related.map(articleCard).join('')}</div></section>` : ''}
   </div>`;
 
@@ -381,7 +381,7 @@ export function registerSiteRoutes(router) {
         values[`${name}_prefix`] = country;
         const joined = joinPhone(dialFor(country), raw);
         values[name] = joined;
-        if (raw && !isDiallable(joined)) missing.push(`${field.props.label || name} (giltigt nummer)`);
+        if (raw && !isDiallable(joined)) missing.push(`${field.props.label || name} (a valid number)`);
       }
     }
 
@@ -389,15 +389,15 @@ export function registerSiteRoutes(router) {
     if (!definition.length || missing.length) {
       flash.formErrorId = placed.id;
       flash.formError = missing.length
-        ? `Fyll i: ${missing.join(', ')}.`
-        : 'Formuläret har inga fält ännu.';
+        ? `Please fill in: ${missing.join(', ')}.`
+        : 'This form has no fields yet.';
       return html(res, renderPage(page, { ...ctx, path: back }, flash));
     }
 
     const fallback = ctx.settings?.contact_email;
     const recipient = isEmail(form.recipient) ? form.recipient
       : (isEmail(fallback) ? fallback : config.mail.contactTo);
-    const subject = form.subject || form.name || 'Meddelande från webbplatsen';
+    const subject = form.subject || form.name || 'Message from the website';
     const body = definition.map((field) => {
       const name = fieldKey(field);
       return `${field.props.label || name}: ${values[name] || '—'}`;
@@ -411,7 +411,7 @@ export function registerSiteRoutes(router) {
         const result = await sendMail({
           to: recipient,
           ...(replyTo ? { replyTo } : {}),
-          ...contactEmail({ subject, from: replyTo || 'okänd avsändare', message: body, page: back }),
+          ...contactEmail({ subject, from: replyTo || 'unknown sender', message: body, page: back }),
         });
         delivered = !!result.delivered;
       } catch (err) {
@@ -519,11 +519,11 @@ export function registerSiteRoutes(router) {
 
 export function notFound(res, ctx) {
   html(res, siteLayout({
-    title: 'Sidan hittades inte',
+    title: 'Page not found',
     content: `<div class="body-col"><div class="empty-state" style="margin-block:var(--s-9)">
-      <h2>Sidan hittades inte</h2>
-      <p>Adressen finns inte, eller så är sidan inte publicerad ännu.</p>
-      <p><a class="btn" href="/">Till startsidan</a></p>
+      <h2>Page not found</h2>
+      <p>There is nothing at this address, or the page is not published yet.</p>
+      <p><a class="btn" href="/">Go to the home page</a></p>
     </div></div>`,
     ctx: ctx || { mainTree: [], extraTree: [], footerTree: [], path: '/', settings: settings.all() },
   }), 404);

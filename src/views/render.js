@@ -250,7 +250,7 @@ export function renderField(obj, ctx = {}) {
        says which country, the input says the rest, and the server joins them
        into E.164 before anything reads the value. The select carries its own
        label because a screen reader meets it before the visible one and
-       "Telefon" would name the pair rather than this half of it. */
+       "Phone" would name the pair rather than this half of it. */
     case 'fieldPhone': {
       const chosen = String(values[`${name}_prefix`] || p.prefix
         || ctx.settings?.site_country || '').toUpperCase();
@@ -258,7 +258,7 @@ export function renderField(obj, ctx = {}) {
         attrs({ value: c.value, selected: c.value === chosen })}>${esc(c.label)}</option>`).join('');
       return `<div class="b-field${half}">${label}
         <div class="b-phone">
-          <select class="b-phone__code" name="${esc(name)}_prefix" aria-label="Landsnummer">${options}</select>
+          <select class="b-phone__code" name="${esc(name)}_prefix" aria-label="Country code">${options}</select>
           <input class="b-phone__number" type="tel" id="${esc(id)}" name="${esc(name)}"
             autocomplete="tel-national" inputmode="tel"
             placeholder="${esc(p.placeholder || '')}" value="${esc(value)}"${req}>
@@ -306,7 +306,7 @@ function renderForm(obj, ctx, s) {
   if (sent) {
     return `<section class="b-form"${s}>
       <p class="b-form__status b-form__status--ok">${
-        esc(form.success_message || 'Tack för ditt meddelande!')}</p>
+        esc(form.success_message || 'Thank you for your message!')}</p>
     </section>`;
   }
 
@@ -317,7 +317,7 @@ function renderForm(obj, ctx, s) {
      a full-width band of its own. */
   const body = form.objects?.length
     ? joinHtml(form.objects.map((obj) => renderObject(obj, ctx)))
-    : '<p class="b-field__hint">Formuläret har inga fält ännu.</p>';
+    : '<p class="b-field__hint">This form has no fields yet.</p>';
 
   return `<form class="b-form" method="post" action="/form/submit" novalidate${s}>
     <input type="hidden" name="page" value="${esc(ctx.path || '')}">
@@ -326,7 +326,7 @@ function renderForm(obj, ctx, s) {
     ${body}
     <div><button class="${buttonClasses({
       colour: form.colour, outline: form.outline, buttonSize: form.button_size,
-    })}" type="submit">${esc(form.submit_label || 'Skicka')}</button></div>
+    })}" type="submit">${esc(form.submit_label || 'Send')}</button></div>
   </form>`;
 }
 
@@ -410,9 +410,9 @@ export function feedItems(list, layout = 'grid') {
 
 /** Subjects a visitor can narrow the feed to, plus the way back to all of them. */
 function chipRow(chips, active, path) {
-  const href = (slug) => esc(slug ? `${path}?kategori=${encodeURIComponent(slug)}` : path);
-  return `<nav class="chip-row" aria-label="Ämnen">
-    <a class="chip${active ? '' : ' is-active'}" href="${href('')}">Alla</a>
+  const href = (slug) => esc(slug ? `${path}?category=${encodeURIComponent(slug)}` : path);
+  return `<nav class="chip-row" aria-label="Subjects">
+    <a class="chip${active ? '' : ' is-active'}" href="${href('')}">All</a>
     ${chips.map((c) => `<a class="chip${active === c.id ? ' is-active' : ''}"
        href="${href(c.slug)}">${esc(c.name)}</a>`).join('')}
   </nav>`;
@@ -436,7 +436,7 @@ function renderArticleFeed(obj, ctx, s = '') {
 
   const body = feed.items.length
     ? `<div class="${FEED_WRAP[layout] || 'card-grid'}" data-feed-items>${feedItems(feed.items, layout)}</div>`
-    : '<div class="placeholder-note">Inga publicerade artiklar ännu.</div>';
+    : '<div class="placeholder-note">No published articles yet.</div>';
 
   /* `more` only means anything while there is more, so the control is not
      drawn on a feed that is already showing everything - a "Load more" that
@@ -444,7 +444,7 @@ function renderArticleFeed(obj, ctx, s = '') {
   const wantsMore = props.more === 'button' || props.more === 'scroll';
   const control = wantsMore && feed.hasMore
     ? (props.more === 'button'
-      ? `<div class="feed-more"><button class="btn" type="button" data-feed-more>Visa fler</button></div>`
+      ? `<div class="feed-more"><button class="btn" type="button" data-feed-more>Show more</button></div>`
       : '<div class="feed-more feed-more--auto" data-feed-more aria-hidden="true"></div>')
     : '';
 
@@ -453,7 +453,7 @@ function renderArticleFeed(obj, ctx, s = '') {
     'data-path': ctx.path || '/',
     'data-offset': feed.items.length,
     'data-mode': props.more,
-    'data-kategori': feed.activeSlug || '',
+    'data-category': feed.activeSlug || '',
   }) : ''}>${chips}${body}${control}</div>`;
 }
 
@@ -467,7 +467,7 @@ export function articleFeature(a, reverse = false) {
       ${a.category_name ? `<span class="tag">${esc(a.category_name)}</span>` : ''}
       <h2 class="block-subheader">${esc(a.title)}</h2>
       ${a.lead ? `<p class="article-feature__lead">${esc(a.lead)}</p>` : ''}
-      <div><a class="btn" href="${esc(articleHref(a))}">${esc(a.cta_label || 'Läs mer')}</a></div>
+      <div><a class="btn" href="${esc(articleHref(a))}">${esc(a.cta_label || 'Read more')}</a></div>
     </div>
   </article>`;
 }
@@ -513,7 +513,7 @@ export function articleRow(a) {
       ${a.category_name ? `<span class="tag">${esc(a.category_name)}</span>` : ''}
       <h3>${esc(a.title)}</h3>
     </div>
-    <span class="textlink">Läs mer</span>
+    <span class="textlink">Read more</span>
   </a>`;
 }
 

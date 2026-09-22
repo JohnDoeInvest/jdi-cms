@@ -123,7 +123,7 @@ function metaFields(page, templateList, ogImage,
           placeholder: 'Site root', disabled: frozen, hint: parentHint,
           extra: `${rides('parent_id')} ${addressHook}` })}
         ${field({ label: 'Slug', name: 'slug', value: page?.slug ?? '',
-          placeholder: 'min-sida', disabled: frozen,
+          placeholder: 'my-page', disabled: frozen,
           hint: frozen ? '' : 'One segment of the address, no slashes. From the title if left empty.',
           extra: `${rides('slug')} data-address-field` })}
         ${page ? `<p class="tiny muted" data-page-address

@@ -128,7 +128,7 @@
 
   /** The trail, in the markup site and canvas share. */
   function trailHtml() {
-    var out = '<nav class="breadcrumbs" aria-label="Brödsmulor"><a href="#">' + homeIcon() + '</a>';
+    var out = '<nav class="breadcrumbs" aria-label="Breadcrumbs"><a href="#">' + homeIcon() + '</a>';
     TRAIL.forEach(function (crumb, i) {
       out += '<span class="breadcrumbs__sep">' + chevronIcon() + '</span>'
         + (i === TRAIL.length - 1

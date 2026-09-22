@@ -88,7 +88,7 @@
       if (publishBtn) publishBtn.disabled = !isDirty;
       if (dirtyPill) {
         dirtyPill.className = 'pill ' + (isDirty ? 'pill--draft' : 'pill--live');
-        dirtyPill.textContent = isDirty ? 'Ej publicerad' : 'Published';
+        dirtyPill.textContent = isDirty ? 'Unpublished' : 'Published';
       }
     }
 

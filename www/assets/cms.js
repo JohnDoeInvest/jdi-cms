@@ -1017,10 +1017,10 @@
   });
 
   /* Flash a toast when a save round-tripped through a redirect. */
-  if (new URLSearchParams(window.location.search).get('sparad')) {
+  if (new URLSearchParams(window.location.search).get('saved')) {
     toast('Saved');
     var clean = new URL(window.location.href);
-    clean.searchParams.delete('sparad');
+    clean.searchParams.delete('saved');
     window.history.replaceState({}, '', clean.toString());
   }
 

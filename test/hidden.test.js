@@ -71,7 +71,7 @@ test('a form in a hidden slice takes no submission', async () => {
   });
   const shown = await post('shownform');
   assert.equal(shown.status, 200);
-  assert.match(await shown.text(), /Formuläret har inga fält ännu/);
+  assert.match(await shown.text(), /This form has no fields yet/);
 
   const hidden = await post('hiddenform');
   assert.equal(hidden.status, 303);

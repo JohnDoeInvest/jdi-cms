@@ -5,6 +5,7 @@ import { randomToken, numericCode, safeEqual, isEmail, normalizePhone, isPhone, 
 import { sendMail, sendSms, otpEmail, otpSms } from './mail.js';
 import { verifyPassword, needsRehash, hashPassword } from './password.js';
 import * as settings from './settings.js';
+import { dialFor } from './phone.js';
 
 export const SESSION_COOKIE = 'slice_session';
 
@@ -213,7 +214,9 @@ export async function setPassword(userId, password) {
 export function identify(input) {
   const value = String(input || '').trim();
   if (isEmail(value)) return { channel: 'email', identifier: value.toLowerCase() };
-  if (isPhone(value)) return { channel: 'sms', identifier: normalizePhone(value) };
+  // A number with no country code is read as local to the site's own country.
+  const dial = dialFor(settings.get('site_country'));
+  if (isPhone(value, dial)) return { channel: 'sms', identifier: normalizePhone(value, dial) };
   return null;
 }
 

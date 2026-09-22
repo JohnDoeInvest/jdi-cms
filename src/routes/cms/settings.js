@@ -15,7 +15,6 @@ const METHOD_LABELS = {
 };
 
 const NOTES = {
-  saved: ['notice', 'Settings saved.'],
   'needs-password': ['notice notice--warn',
     'Sign-in was left as it was: set yourself a password under Account first, or you could not get back in.'],
 };
@@ -124,7 +123,7 @@ export function registerSettings(router, guard) {
 
   router.post('/cms/settings', guard(async (req, res, { user }) => {
     const { fields } = await parseForm(req);
-    let note = 'saved';
+    let note = '';
     if ('signin_method' in fields) {
       if (!SIGN_IN_METHODS.includes(fields.signin_method)) delete fields.signin_method;
       /* Passwords only, from an admin who has none, would shut the door on
@@ -140,6 +139,7 @@ export function registerSettings(router, guard) {
       else if (spec.type === 'media' || spec.type === 'page') set(key, Number(fields[key]) || null);
       else set(key, String(fields[key] ?? '').trim());
     }
-    redirect(res, `/cms/settings?note=${note}`);
+    // A plain save is a toast (cms.js reads `saved`); a refusal stays on the page.
+    redirect(res, note ? `/cms/settings?note=${note}` : '/cms/settings?saved=1');
   }, 'admin'));
 }

@@ -23,7 +23,7 @@ function mainMenu(tree, path) {
         `<a href="${esc(child.href || '#')}">${esc(child.label)}</a>`).join('')}</div>` : ''}
     </li>`;
   });
-  return `<nav class="mainmenu" aria-label="Huvudmeny"><ul class="mainmenu__list">${items.join('')}</ul></nav>`;
+  return `<nav class="mainmenu" aria-label="Main menu"><ul class="mainmenu__list">${items.join('')}</ul></nav>`;
 }
 
 function extraMenu(tree, path) {
@@ -34,7 +34,7 @@ function extraMenu(tree, path) {
 
 function subMenu(tree, path) {
   if (!tree?.length) return '';
-  return `<nav class="submenu" aria-label="Undermeny"><div class="shell"><ul class="submenu__list">${
+  return `<nav class="submenu" aria-label="Section menu"><div class="shell"><ul class="submenu__list">${
     tree.map((node) => `<li class="${cls(isActive(node, path) && 'is-active')}">
       <a href="${esc(node.href || '#')}">${esc(node.label)}</a></li>`).join('')
   }</ul></div></nav>`;
@@ -70,8 +70,8 @@ function breadcrumbs(trail) {
       : `<a href="${esc(crumb.href)}">${esc(crumb.label)}</a>`;
     return `<span class="breadcrumbs__sep">${icon('chevronRight', 12)}</span>${label}`;
   });
-  return `<nav class="breadcrumbs" aria-label="Brödsmulor">
-    <a href="/" aria-label="Startsida">${icon('home', 15)}</a>${parts.join('')}
+  return `<nav class="breadcrumbs" aria-label="Breadcrumbs">
+    <a href="/" aria-label="Home">${icon('home', 15)}</a>${parts.join('')}
   </nav>`;
 }
 
@@ -132,7 +132,7 @@ ${canonical ? `<link rel="canonical" href="${esc(canonical)}">` : ''}
 <style>${themeCss(siteTheme)}</style>
 </head>
 <body class="${esc(bodyClass)}">
-<a class="visually-hidden" href="#main">Hoppa till innehåll</a>
+<a class="visually-hidden" href="#main">Skip to content</a>
 ${banner}
 
 <header class="topbar" data-topbar>
@@ -140,7 +140,7 @@ ${banner}
     <a class="topbar__logo" href="/" aria-label="${esc(siteName)}">
       ${logoImg}
     </a>
-    <button class="topbar__toggle" type="button" data-menu-toggle aria-expanded="false" aria-label="Meny">
+    <button class="topbar__toggle" type="button" data-menu-toggle aria-expanded="false" aria-label="Menu">
       ${icon('menu', 36, 'topbar__toggle-open')}${icon('close', 32, 'topbar__toggle-close')}
     </button>
     <div class="topbar__extra">

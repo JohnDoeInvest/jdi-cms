@@ -46,7 +46,7 @@
       return '/api/feed?path=' + encodeURIComponent(feed.dataset.path || '/')
         + '&block=' + encodeURIComponent(feed.dataset.feed)
         + '&offset=' + offset
-        + (feed.dataset.kategori ? '&kategori=' + encodeURIComponent(feed.dataset.kategori) : '');
+        + (feed.dataset.category ? '&category=' + encodeURIComponent(feed.dataset.category) : '');
     }
 
     /* `done` and `busy` are separate: one request in flight must not start a
@@ -102,7 +102,7 @@
       control.addEventListener('click', load);
       control.classList.remove('feed-more--auto');
       if (!control.querySelector('button')) {
-        control.innerHTML = '<button class="btn" type="button">Visa fler</button>';
+        control.innerHTML = '<button class="btn" type="button">Show more</button>';
       }
     }
   });

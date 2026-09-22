@@ -5,6 +5,8 @@ import { cmsLayout, cmsHead } from '../../views/cms/layout.js';
 import { field, select, emptyState, rowActions, mediaPicker } from '../../views/cms/parts.js';
 import { users, media } from '../../models.js';
 import { isEmail, normalizePhone } from '../../lib/util.js';
+import { dialFor, countryList } from '../../lib/phone.js';
+import * as settings from '../../lib/settings.js';
 import { initials, formatDate } from '../../views/helpers.js';
 import { mediaUrl } from '../../lib/media.js';
 import { passwordProblem, MIN_LENGTH } from '../../lib/password.js';
@@ -17,10 +19,8 @@ const ROLES = [
 ];
 const ROLE_HINT = 'Visitor reads, Editor writes articles and pages, Admin manages everything.';
 
-const COUNTRIES = [
-  ['SE', 'Sweden'], ['NO', 'Norway'], ['DK', 'Denmark'], ['FI', 'Finland'],
-  ['DE', 'Germany'], ['NL', 'Netherlands'], ['GB', 'United Kingdom'], ['US', 'USA'],
-].map(([value, label]) => ({ value, label }));
+// The phone field's list, so a person can be in any country a number can be.
+const COUNTRIES = countryList().map((c) => ({ value: c.iso, label: c.name }));
 
 /** Frames 4.5 + 5.1 - user list, inline add row and the Properties pane. */
 export function registerUsers(router, guard) {
@@ -77,7 +77,7 @@ export function registerUsers(router, guard) {
             <div class="avatar avatar--lg" data-preview>${image
               ? `<img src="${esc(mediaUrl(image.filename))}" alt="">`
               : esc(initials(editing.full_name, editing.email))}</div>
-            <button class="linkish" type="button" data-pick style="margin-top:6px">Byt bild</button>
+            <button class="linkish" type="button" data-pick style="margin-top:6px">Change picture</button>
             <input type="hidden" name="image_id" value="${editing.image_id ?? ''}" data-value>
           </div>
           <div class="grow">
@@ -87,7 +87,7 @@ export function registerUsers(router, guard) {
         ${select({ label: 'Country', name: 'country', value: editing.country, options: COUNTRIES })}
         ${field({ label: 'Full name', name: 'full_name', value: editing.full_name })}
         ${field({ label: 'Email', name: 'email', type: 'email', value: editing.email, required: true })}
-        ${field({ label: 'Phone', name: 'phone', type: 'tel', value: editing.phone, hint: 'Without a country code, +46 is assumed.' })}
+        ${field({ label: 'Phone', name: 'phone', type: 'tel', value: editing.phone, hint: 'Without a country code, the country above is assumed.' })}
         ${field({ label: 'Address', name: 'address', value: editing.address })}
         <div class="field-row">
           ${field({ label: 'Postcode', name: 'zip', value: editing.zip })}
@@ -119,7 +119,8 @@ export function registerUsers(router, guard) {
       users.create({
         full_name: String(fields.full_name || '').trim(),
         email,
-        phone: normalizePhone(fields.phone),
+        phone: normalizePhone(fields.phone, dialFor(settings.get('site_country'))),
+        country: settings.get('site_country'),
         role: ROLES.some((r) => r.value === fields.role) ? fields.role : 'visitor',
       });
     }
@@ -147,9 +148,9 @@ export function registerUsers(router, guard) {
     users.update(id, {
       full_name: String(fields.full_name || '').trim(),
       ...(isEmail(email) && (!clash || clash.id === id) ? { email } : {}),
-      phone: normalizePhone(fields.phone),
+      phone: normalizePhone(fields.phone, dialFor(fields.country || settings.get('site_country'))),
       role: ROLES.some((r) => r.value === fields.role) ? fields.role : undefined,
-      country: String(fields.country || 'SE'),
+      country: String(fields.country || settings.get('site_country')),
       address: String(fields.address || ''),
       zip: String(fields.zip || ''),
       city: String(fields.city || ''),

@@ -3,7 +3,7 @@ import crypto from 'node:crypto';
 const TRANSLIT = { å: 'a', ä: 'a', ö: 'o', é: 'e', è: 'e', ü: 'u', ø: 'o', æ: 'ae', ß: 'ss', ñ: 'n', ç: 'c' };
 
 /** URL-safe slug with Swedish characters folded sensibly. */
-export function slugify(input, fallback = 'sida') {
+export function slugify(input, fallback = 'page') {
   const base = String(input || '')
     .toLowerCase()
     .replace(/[åäöéèüøæßñç]/g, (c) => TRANSLIT[c] || c)
@@ -36,19 +36,24 @@ export function normalizePermalink(value, fallback = '/') {
 
 export const isEmail = (value) => /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(String(value || '').trim());
 
-/** Swedish default: bare numbers get +46 and lose their leading zero. */
-export function normalizePhone(value) {
+/**
+ * A phone number as E.164. A number written with `+` or `00` says its own
+ * country; a bare one is read as local to `dial` - the site's country, which
+ * callers take from Settings - and loses its trunk zero. With no dial code a
+ * bare number cannot be placed, and is not a phone number.
+ */
+export function normalizePhone(value, dial = '') {
   const raw = String(value || '').replace(/[\s\-().]/g, '');
   if (!raw) return '';
   if (raw.startsWith('+')) return '+' + raw.slice(1).replace(/\D/g, '');
   const digits = raw.replace(/\D/g, '');
   if (!digits) return '';
   if (digits.startsWith('00')) return '+' + digits.slice(2);
-  if (digits.startsWith('46')) return '+' + digits;
-  return '+46' + digits.replace(/^0+/, '');
+  const code = String(dial || '').replace(/\D/g, '');
+  return code ? `+${code}${digits.replace(/^0+/, '')}` : '';
 }
 
-export const isPhone = (value) => /^\+\d{8,15}$/.test(normalizePhone(value));
+export const isPhone = (value, dial = '') => /^\+\d{8,15}$/.test(normalizePhone(value, dial));
 
 export const randomToken = (bytes = 32) => crypto.randomBytes(bytes).toString('base64url');
 
@@ -76,13 +81,21 @@ const sqlToDate = (value) => {
 
 export const nowSql = () => new Date().toISOString().slice(0, 19).replace('T', ' ');
 
-export function formatDate(value, locale = 'sv-SE') {
+/*
+ * English, in the day-month order most of the English-speaking world reads -
+ * "7 September 2026" - and a 24-hour clock. A short date is ISO, 2026-09-07,
+ * which no reader anywhere can take for a different day.
+ */
+const LOCALE = 'en-GB';
+
+export function formatDate(value) {
   const d = sqlToDate(value);
   if (!d) return '';
-  return d.toLocaleDateString(locale, { year: 'numeric', month: '2-digit', day: '2-digit' });
+  const two = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${two(d.getMonth() + 1)}-${two(d.getDate())}`;
 }
 
-export function formatDateLong(value, locale = 'sv-SE') {
+export function formatDateLong(value, locale = LOCALE) {
   const d = sqlToDate(value);
   if (!d) return '';
   return d.toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' });
@@ -100,7 +113,7 @@ export function formatDateLong(value, locale = 'sv-SE') {
  * Compared by calendar day rather than by hours elapsed: something saved at
  * 23:50 is "yesterday" at 00:10, not "17 minutes ago".
  */
-export function relativeDate(value, locale = 'sv-SE', now = new Date()) {
+export function relativeDate(value, locale = LOCALE, now = new Date()) {
   const d = sqlToDate(value);
   if (!d) return '';
   const startOf = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
@@ -109,7 +122,7 @@ export function relativeDate(value, locale = 'sv-SE', now = new Date()) {
     return `Today ${d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}`;
   }
   if (days === 1) return 'Yesterday';
-  return formatDate(value, locale);
+  return formatDate(value);
 }
 
 /**
@@ -120,16 +133,16 @@ export function relativeDate(value, locale = 'sv-SE', now = new Date()) {
  * for Monday. Compared by calendar day, as `relativeDate` is, so 00:30
  * tomorrow is tomorrow however few hours away it is.
  */
-export function scheduleDate(value, locale = 'sv-SE', now = new Date()) {
+export function scheduleDate(value, locale = LOCALE, now = new Date()) {
   const d = sqlToDate(value);
   if (!d) return null;
   const startOf = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
   const days = Math.round((startOf(d) - startOf(now)) / 86400000);
   const time = d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
-  let day = formatDate(value, locale);
+  let day = formatDate(value);
   if (days === 0) day = 'today';
   else if (days === 1) day = 'tomorrow';
-  else if (days > 1 && days < 7) day = d.toLocaleDateString('en-GB', { weekday: 'long' });
+  else if (days > 1 && days < 7) day = d.toLocaleDateString(locale, { weekday: 'long' });
   return { day, time };
 }
 

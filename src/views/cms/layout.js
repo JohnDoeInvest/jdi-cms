@@ -119,7 +119,7 @@ export function cmsLayout({ title, user, path, center, right = null, footer = nu
   // cms-tokens.css so a --ui-* rule always wins if the two ever meet.
   const siteTheme = theme();
   return `<!doctype html>
-<html lang="sv">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">

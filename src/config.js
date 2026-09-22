@@ -69,9 +69,9 @@ export const config = {
    * With AUTH_DISABLED on, any visit to the CMS from this machine is signed
    * in with no cookie - as DEV_USER, or the first admin when that is unset.
    * That is a real convenience while building and indistinguishable from no
-   * authentication at all to anyone else. It used to default to on, so a fresh install shipped open; the
-   * bypass is now refused for any request that did not come from localhost,
-   * and it has to be asked for.
+   * authentication at all to anyone else. It used to default to on, so a
+   * fresh install shipped open; the bypass is now refused for any request
+   * that did not come from localhost, and it has to be asked for.
    *
    * Turn it on for local work:  AUTH_DISABLED=1 ./start.sh
    */
@@ -168,10 +168,10 @@ export const config = {
   },
 
   // Fallback for the site's lang attribute; the real value is a CMS setting.
-  defaultLang: 'sv',
+  defaultLang: 'en',
   // Which country a phone field starts on, for the same reason and in the
   // same way: a fallback here, a setting in the CMS.
-  defaultCountry: 'SE',
+  defaultCountry: 'GB',
 };
 
 for (const dir of [config.paths.data, config.paths.outbox, config.paths.media]) {

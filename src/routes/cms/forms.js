@@ -50,7 +50,7 @@ function formCard(colors, form) {
       ${field({ label: 'Email subject', name: 'subject', value: form.subject,
         placeholder: form.name, extra: 'data-form-field="subject"' })}
       ${textarea({ label: 'Confirmation message', name: 'success_message', rows: 3,
-        value: form.success_message, placeholder: 'Tack för ditt meddelande!',
+        value: form.success_message, placeholder: 'Thank you for your message!',
         extra: 'data-form-field="success_message"' })}
       </div>
     </section>
@@ -59,7 +59,7 @@ function formCard(colors, form) {
       <h2 class="h-section" style="margin-bottom:var(--ui-s-4)">Submit button</h2>
       <div class="stack">
       ${field({ label: 'Label', name: 'submit_label', value: form.submit_label,
-        placeholder: 'Skicka', extra: 'data-form-field="submit_label"' })}
+        placeholder: 'Send', extra: 'data-form-field="submit_label"' })}
       <div class="field">
         <label>Colour</label>
         <div class="swatch-grid" data-colour-group>

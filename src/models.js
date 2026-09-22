@@ -284,8 +284,8 @@ export const pages = {
   /** The address a parent and a slug make, unique against pages and articles. */
   composePermalink({ parentId, slug, title, pageId = null }) {
     const parent = this.resolveParent(parentId, { pageId });
-    const own = slugify(String(slug || '').split('/').filter(Boolean).pop() || title || 'ny-sida', '')
-      || 'ny-sida';
+    const own = slugify(String(slug || '').split('/').filter(Boolean).pop() || title || 'new-page', '')
+      || 'new-page';
     const base = normalizePermalink(`${parent ? parent.permalink : ''}/${own}`);
     return {
       parentId: parent ? parent.id : null,
@@ -341,7 +341,7 @@ export const pages = {
                           og_image_id, use_first_image, content, draft_content, password,
                           status, created_by)
        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-      data.title || 'Namnlös sida', parentId, slug, permalink,
+      data.title || 'Untitled page', parentId, slug, permalink,
       PAGE_TYPES.includes(data.page_type) ? data.page_type : 'default',
       data.submenu_id || null,
       data.meta_title || '', data.meta_description || '', data.og_image_id || null,
@@ -955,7 +955,7 @@ export const articles = {
     const parentId = Number(data.parent_id) || null;
     // Unique as a slug *and* as a whole address: the slug is what the CMS
     // addresses an article by, the address is what the site does.
-    const slug = uniqueSlug(slugify(data.title || 'artikel', 'artikel'),
+    const slug = uniqueSlug(slugify(data.title || 'article', 'article'),
       (c) => !!get('SELECT 1 FROM articles WHERE slug = ?', c)
         || permalinkTaken(composePermalink(parentId, c)));
     // Both copies start in step, so an article is never born already "edited".
@@ -993,7 +993,7 @@ export const articles = {
     if (current.status !== 'published' && !isScheduled('article_id', id)) {
       const parentId = data.parent_id !== undefined
         ? (Number(data.parent_id) || null) : current.parent_id;
-      const wanted = data.title ? slugify(data.title, 'artikel') : current.slug;
+      const wanted = data.title ? slugify(data.title, 'article') : current.slug;
       const slug = uniqueSlug(wanted,
         (c) => !!get('SELECT 1 FROM articles WHERE slug = ? AND id <> ?', c, id)
           || permalinkTaken(composePermalink(parentId, c), { articleId: id }));
@@ -1072,7 +1072,7 @@ export const categories = {
   bySlug: (slug) => get('SELECT * FROM categories WHERE slug = ?', slug),
 
   create(name, userId) {
-    const slug = uniqueSlug(slugify(name, 'kategori'), (c) => !!get('SELECT 1 FROM categories WHERE slug = ?', c));
+    const slug = uniqueSlug(slugify(name, 'category'), (c) => !!get('SELECT 1 FROM categories WHERE slug = ?', c));
     const info = run('INSERT INTO categories (name, slug, created_by) VALUES (?,?,?)', name, slug, userId || null);
     return this.byId(info.lastInsertRowid);
   },
@@ -1233,7 +1233,7 @@ export const templates = {
 
   /** Save a page as a template. Blocks are re-normalised, never trusted raw. */
   create(name, { pageType = 'default', blocks = [] } = {}) {
-    const slug = uniqueSlug(slugify(name, 'mall'), (c) => !!get('SELECT 1 FROM templates WHERE slug = ?', c));
+    const slug = uniqueSlug(slugify(name, 'template'), (c) => !!get('SELECT 1 FROM templates WHERE slug = ?', c));
     const info = run('INSERT INTO templates (name, slug, page_type, definition) VALUES (?,?,?,?)',
       name, slug, PAGE_TYPES.includes(pageType) ? pageType : 'default',
       JSON.stringify(normalizeBlocks(blocks)));
@@ -1333,7 +1333,7 @@ export const forms = {
   byId(id) { return this.hydrate(get('SELECT * FROM forms WHERE id = ?', Number(id) || 0)); },
 
   create(name) {
-    const info = run('INSERT INTO forms (name) VALUES (?)', String(name || '').trim() || 'Nytt formulär');
+    const info = run('INSERT INTO forms (name) VALUES (?)', String(name || '').trim() || 'New form');
     return this.byId(info.lastInsertRowid);
   },
 
@@ -1342,7 +1342,7 @@ export const forms = {
     const params = [];
     const set = (column, value) => { fields.push(`${column} = ?`); params.push(value); };
 
-    if (data.name !== undefined) set('name', String(data.name).trim() || 'Nytt formulär');
+    if (data.name !== undefined) set('name', String(data.name).trim() || 'New form');
     if (data.objects !== undefined) set('content', JSON.stringify(normalizeObjects(data.objects)));
     if (data.recipient !== undefined) set('recipient', String(data.recipient).trim());
     if (data.subject !== undefined) set('subject', String(data.subject).trim());
@@ -1408,7 +1408,7 @@ export const menus = {
 
   create(name, tree = []) {
     const info = run('INSERT INTO menus (name, draft) VALUES (?,?)',
-      name || 'Ny meny', JSON.stringify(normalizeMenuTree(tree)));
+      name || 'New menu', JSON.stringify(normalizeMenuTree(tree)));
     return this.byId(info.lastInsertRowid);
   },
 
@@ -1437,7 +1437,7 @@ export const menus = {
   duplicate(id) {
     const src = get('SELECT * FROM menus WHERE id = ?', id);
     if (!src) return null;
-    const info = run('INSERT INTO menus (name, draft) VALUES (?,?)', `${src.name} (kopia)`, src.draft);
+    const info = run('INSERT INTO menus (name, draft) VALUES (?,?)', `${src.name} (copy)`, src.draft);
     return this.byId(info.lastInsertRowid);
   },
 
@@ -1463,7 +1463,7 @@ export const users = {
       `INSERT INTO users (full_name, email, phone, role, country, address, zip, city)
        VALUES (?,?,?,?,?,?,?,?)`,
       data.full_name || '', String(data.email || '').toLowerCase(), data.phone || '',
-      data.role || 'visitor', data.country || 'SE', data.address || '', data.zip || '', data.city || '');
+      data.role || 'visitor', data.country || '', data.address || '', data.zip || '', data.city || '');
     return this.byId(info.lastInsertRowid);
   },
 
