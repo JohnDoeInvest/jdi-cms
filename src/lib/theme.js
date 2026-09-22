@@ -18,14 +18,20 @@ import { list as fontList, stackFor, fontFaceCss } from './fonts.js';
  * Nothing here reaches the CMS chrome. cms-tokens.css owns that, under --ui-*.
  */
 
-/** A fresh install's palette. Matches tokens.css so upgrading changes nothing. */
+/**
+ * A fresh install's palette, neutral like the default tokens.css it matches.
+ *
+ * The ids are older than the names and stay as they are: a slice stores the
+ * id of its background, so renaming one would strip the colour from every
+ * slice that used it. `sand` is shown as Stone and `brand` as Tint.
+ */
 export const DEFAULT_COLORS = [
-  { id: 'paper',  name: 'Paper',  value: '#f0ede8', ink: '#1e1e1e' },
+  { id: 'paper',  name: 'Paper',  value: '#f5f5f5', ink: '#1e1e1e' },
   { id: 'white',  name: 'White',  value: '#ffffff', ink: '#1e1e1e' },
-  { id: 'sand',   name: 'Sand',   value: '#dcd5c6', ink: '#1e1e1e' },
+  { id: 'sand',   name: 'Stone',  value: '#e5e5e5', ink: '#1e1e1e' },
   { id: 'ink',    name: 'Ink',    value: '#1e1e1e', ink: '#ffffff' },
   { id: 'accent', name: 'Accent', value: '#357abb', ink: '#ffffff' },
-  { id: 'brand',  name: 'Brand',  value: '#ffcc1b', ink: '#1e1e1e' },
+  { id: 'brand',  name: 'Tint',   value: '#eaf1f8', ink: '#1e1e1e' },
 ];
 
 /**

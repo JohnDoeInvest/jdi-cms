@@ -225,7 +225,7 @@ ok('a choice field draws as a radio group', page.includes('type="radio"') && pag
    slice comes with it. */
 ok('a form brings no slice of its own', !page.split('<form class="b-form"')[1].startsWith('</form>')
   && !page.split('<form class="b-form"')[1].split('</form>')[0].includes('b-slice'));
-ok('has breadcrumbs', page.includes('Brödsmulor'));
+ok('has breadcrumbs', page.includes('aria-label="Breadcrumbs"'));
 ok('has meta description', page.includes('content="Beskrivning"'));
 
 /* ------------------------------------------------------------ contact form */
@@ -236,7 +236,7 @@ r = await postForm('/form/submit', { page: permalink, form: formId,
   epost: 'test@exempel.se', meddelande: 'Ett testmeddelande.' });
 ok('accepts a valid submission', r.status === 200 && String(r.body).includes('Tack!'));
 r = await postForm('/form/submit', { page: permalink, form: formId, epost: 'trasig', meddelande: '' });
-ok('rejects an invalid one', String(r.body).includes('Fyll i:'));
+ok('rejects an invalid one', String(r.body).includes('Please fill in:'));
 ok('names the offending fields', String(r.body).includes('Meddelande'));
 
 /* A phone field is a select and an input answering together. What is stored

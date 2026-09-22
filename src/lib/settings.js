@@ -23,9 +23,7 @@ export const SCHEMA = {
                       label: 'Country', hint: 'Two-letter code. A phone field starts on this country.' },
 
   logo_media:       { type: 'media', default: null,
-                      label: 'Logo (dark background)', hint: 'Shown in the top bar and footer.' },
-  logo_dark_media:  { type: 'media', default: null,
-                      label: 'Logo (light background)', hint: 'Used in the CMS and on light surfaces.' },
+                      label: 'Logo', hint: 'Shown in the top bar and footer. With none, the site name stands in.' },
   favicon_media:    { type: 'media', default: null,
                       label: 'Favicon', hint: 'Square image, ideally SVG or PNG.' },
 

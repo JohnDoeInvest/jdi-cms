@@ -53,6 +53,16 @@ export const config = {
 
   paths: {
     www: path.join(ROOT, 'www'),
+    /*
+     * A site's own look, kept outside this repo. Any file in it is served in
+     * place of the file of the same name in www/assets - tokens.css and
+     * site.css are the pair a theme is made of, a favicon.svg or site.js may
+     * come along - and everything it does not have falls through to the
+     * default. Empty: the default theme, as shipped.
+     *
+     *   THEME_DIR=/srv/example-theme ./start.sh
+     */
+    theme: process.env.THEME_DIR ? path.resolve(process.env.THEME_DIR) : '',
     media: path.join(ROOT, 'www', 'media'),
     // Typefaces, beside the uploads rather than among them: a font is not a
     // picture and has no business in the media library's browser.

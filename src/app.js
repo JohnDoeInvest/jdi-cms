@@ -3,6 +3,7 @@ import express from 'express';
 import compression from 'compression';
 import { config } from './config.js';
 import { html, json, HttpError } from './lib/http.js';
+import { assetFile } from './lib/assets.js';
 import { registerSiteRoutes, buildContext } from './routes/site.js';
 import { registerAuthRoutes } from './routes/auth.js';
 import { registerCmsRoutes } from './routes/cms.js';
@@ -38,6 +39,12 @@ export function createApp() {
   const files = (dir, options) => express.static(dir, {
     index: false, redirect: false, fallthrough: false, ...options,
   });
+  // A theme's files first, falling through to the default for the rest.
+  if (config.paths.theme) {
+    app.use('/assets', express.static(config.paths.theme, {
+      index: false, redirect: false, fallthrough: true, dotfiles: 'ignore', maxAge: '1h',
+    }));
+  }
   app.use('/assets', files(path.join(config.paths.www, 'assets'), { maxAge: '1h' }));
   // Uploaded, so hardened rather than trusted: an SVG can carry script, and
   // must never run against our own origin.
@@ -46,7 +53,7 @@ export function createApp() {
   // replaced face is a new filename, never the same one with new bytes.
   app.use('/fonts', files(config.paths.fonts, { maxAge: '365d', immutable: true, setHeaders: inert }));
   app.get('/favicon.ico', (req, res, next) => {
-    res.sendFile('favicon.svg', { root: path.join(config.paths.www, 'assets'), maxAge: '7d' },
+    res.sendFile('favicon.svg', { root: path.dirname(assetFile('/assets/favicon.svg')), maxAge: '7d' },
       (err) => err && next(err));
   });
 

@@ -3,6 +3,21 @@ import path from 'node:path';
 import { config } from '../config.js';
 
 /**
+ * The file on disk behind an /assets URL: the theme's own copy when THEME_DIR
+ * has one, the default in www/assets otherwise - the same order the server
+ * looks in, so a version is always taken from the file actually served.
+ */
+export function assetFile(urlPath) {
+  const name = urlPath.replace(/^\/+assets\/+/, '').replace(/^\/+/, '');
+  if (config.paths.theme) {
+    const themed = path.join(config.paths.theme, name);
+    // Never outside the theme folder, whatever the name says.
+    if (themed.startsWith(config.paths.theme + path.sep) && fs.existsSync(themed)) return themed;
+  }
+  return path.join(config.paths.www, 'assets', name);
+}
+
+/**
  * Cache-busting asset URLs.
  *
  * Static files are served with a long max-age, so every URL carries a version
@@ -19,8 +34,7 @@ export function asset(urlPath) {
 
   let version = '0';
   try {
-    const file = path.join(config.paths.www, urlPath.replace(/^\/+/, ''));
-    version = Math.round(fs.statSync(file).mtimeMs).toString(36);
+    version = Math.round(fs.statSync(assetFile(urlPath)).mtimeMs).toString(36);
   } catch { /* missing file: fall through with a stable version */ }
 
   const url = `${urlPath}?v=${version}`;

@@ -55,8 +55,6 @@ export function registerSettings(router, guard) {
           <div class="stack">
             ${mediaPicker({ name: 'logo_media', item: pick('logo_media'),
               label: SCHEMA.logo_media.label, hint: SCHEMA.logo_media.hint })}
-            ${mediaPicker({ name: 'logo_dark_media', item: pick('logo_dark_media'),
-              label: SCHEMA.logo_dark_media.label, hint: SCHEMA.logo_dark_media.hint })}
             ${mediaPicker({ name: 'favicon_media', item: pick('favicon_media'),
               label: SCHEMA.favicon_media.label, hint: SCHEMA.favicon_media.hint })}
           </div>

@@ -89,7 +89,7 @@
 .b-text strong { font-weight: 600; }
 .b-text blockquote {
   margin: 0 0 var(--s-3); padding-left: var(--s-4);
-  border-left: 3px solid var(--brand-yellow); color: var(--grey-700);
+  border-left: 3px solid var(--highlight); color: var(--grey-700);
 }
 
 .b-quote {
@@ -97,7 +97,7 @@
   font-size: clamp(1.4rem, 2.8vw, var(--fs-2xl));
   line-height: var(--lh-snug);
   letter-spacing: var(--tracking-tight);
-  border-left: 3px solid var(--brand-yellow);
+  border-left: 3px solid var(--highlight);
   padding-left: var(--s-5);
   color: var(--ink);
 }
@@ -188,7 +188,7 @@
    picture was never chosen, or whose file has since been deleted from the
    library. That has to be visible enough to notice and fix, where an
    invisible zero-height gap would just quietly swallow the mistake. */
-.b-image__frame:empty { background: var(--sand); min-height: 180px; }
+.b-image__frame:empty { background: var(--placeholder-bg); min-height: 180px; }
 .b-image__frame img, .b-image__frame video { width: 100%; height: auto; display: block; }
 .b-image figcaption {
   margin-top: var(--s-3); font-size: var(--fs-base); font-style: italic; color: var(--grey-500);
@@ -225,7 +225,7 @@
 
 .b-embed { margin: 0; }
 .b-embed__frame {
-  border-radius: var(--radius-lg); overflow: hidden; background: var(--sand);
+  border-radius: var(--radius-lg); overflow: hidden; background: var(--placeholder-bg);
   position: relative;
 }
 .b-embed__frame iframe { width: 100%; height: 100%; display: block; border: 0; }

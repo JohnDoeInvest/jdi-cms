@@ -1,5 +1,5 @@
 /* ===================================================================
-   Site design tokens - the brand of the site being edited.
+   Site design tokens - the look of the site being edited.
 
    The CMS does not read this file for its own chrome; it has its own set
    in cms-tokens.css under --ui-* names. Both load in the editor, because
@@ -7,36 +7,69 @@
    but nothing here reaches the interface around it. Change any of this
    freely: a site's brand cannot move the editor.
 
-   Palette: graphite greys with Swedish yellow and blue as accents.
+   This is the default theme, and deliberately plain: neutral greys and
+   one blue. A site makes it its own in two places - the Theme screen,
+   which stores colours, faces, sizes and measures in the database and
+   overrides the matching names below, and THEME_DIR, a folder whose
+   tokens.css and site.css are served in place of these (see README).
    =================================================================== */
 
 :root {
-  /* --- brand ------------------------------------------------------ */
-  --brand-yellow:      #ffcc1b;   /* from the logotype */
-  --brand-yellow-soft: #f7cd4b;
-  --brand-blue:        #007cc0;   /* from the logotype */
-  --accent:            #357abb;   /* interface accent */
+  /* --- accent ----------------------------------------------------- */
+  --accent:            #357abb;   /* links, focus, the active menu item */
   --accent-dark:       #2c6499;
   --accent-tint:       #eaf1f8;
+  /* The mark beside things - a quote's rule, the eyebrow's diamond, a
+     social icon under the pointer. A second colour for a site that has
+     one; this theme has only the accent. */
+  --highlight:         var(--accent);
+  --highlight-ink:     #ffffff;
 
   /* --- graphite scale --------------------------------------------- */
   --ink:        #1e1e1e;
   --graphite:   #2c2c2c;
   --charcoal:   #262626;
-  --footer-bg:  #1b1b1b;
   --grey-700:   #545454;
   --grey-500:   #6b6b6b;
   --grey-300:   #b2b2b2;
   --grey-200:   #e3e3e3;
-  --grey-100:   #f2f1ef;
+  --grey-100:   #f2f2f2;
 
-  /* --- warm neutrals ---------------------------------------------- */
-  --paper:      #f0ede8;
-  --sand:       #dcd5c6;
+  /* --- neutrals ---------------------------------------------------- */
+  --paper:      #f5f5f5;
+  --sand:       #e5e5e5;
   --white:      #ffffff;
   --off-white:  #fafafa;
-  --line:       #e2ded4;
-  --line-soft:  #ece9e2;
+  --line:       #e3e3e3;
+  --line-soft:  #ededed;
+
+  /* --- the site's own furniture ------------------------------------
+     What site.css paints the page, the top bar, the sub menu and the
+     footer with. Named for the place rather than the colour, so a theme
+     that wants a dark bar or a light footer changes a value here and
+     not a rule in site.css. */
+  --page-bg:        var(--paper);
+  --placeholder-bg: var(--sand);   /* an empty picture frame */
+
+  --bar-bg:         var(--white);
+  --bar-ink:        var(--ink);    /* the logo's stand-in, the current item */
+  --bar-link:       var(--grey-700);
+  --bar-muted:      var(--grey-500);
+  --bar-hover-bg:   var(--grey-100);
+  --bar-rule:       var(--line);
+
+  --submenu-bg:     var(--grey-100);
+  --submenu-ink:    var(--ink);
+  --submenu-muted:  var(--grey-500);
+
+  /* The bar and the footer show the same logo - Settings holds one - so a
+     theme keeps them on grounds that one logo reads on. */
+  --footer-bg:      var(--white);
+  --footer-ink:     var(--ink);
+  --footer-muted:   var(--grey-700);
+  --footer-faint:   var(--grey-500);
+  --footer-rule:    var(--line);
+  --footer-chip-bg: var(--grey-100);
 
   /* --- state ------------------------------------------------------ */
   --danger:      #c0392b;
@@ -132,7 +165,7 @@
   --shadow-lg: 0 18px 48px rgba(27, 27, 27, .13);
   --shadow-dialog: 0 24px 64px rgba(27, 27, 27, .18);
 
-  --ring: 0 0 0 3px rgba(53, 122, 187, .22);
+  --ring: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
 
   /* --- layout ----------------------------------------------------- */
   /* Measures. The theme screen overrides all four; these are what a site
