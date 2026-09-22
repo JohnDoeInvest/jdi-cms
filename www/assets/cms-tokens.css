@@ -1,0 +1,229 @@
+/* ===================================================================
+   CMS - design tokens
+   
+   The editor's own set, deliberately sharing nothing with the site it
+   edits. Every name is prefixed `--ui-`, so a site token and a CMS token
+   can never collide even though both files load in the editor: the canvas
+   renders real content through tokens.css and blocks.css, while everything
+   around it draws from here.
+
+   That separation is the point. The CMS is its own product and runs more
+   than one site - smartaremat.se and macsmoser.com, with deliberately
+   different visuals - so a site changing its brand, its type scale or its
+   spacing must not move a single pixel of the editor.
+
+   Palette: neutral greys, no warmth, no brand. One blue marks state, black
+   and white carry the actions, red stays for the destructive ones. Nothing
+   here is borrowed from either site.
+
+   Two appearances. Light is written here on :root; dark, at the foot of the
+   file, overrides the same names when cms-appearance.js has set
+   data-appearance="dark" on the root - so a rule never asks which mode it is
+   in, it just says --ui-ink. The canvas is the exception, and is named in
+   this first selector: it shows the site the way the site draws it, so in
+   dark mode it takes this light set back and stays a light sheet.
+   =================================================================== */
+
+:root,
+:root[data-appearance="dark"] .canvas,
+:root[data-appearance="dark"] .theme-preview__type {
+  color-scheme: light;
+
+  /* --- interface accent -------------------------------------------
+     One blue, belonging to neither site's brand. It marks state -
+     focus, selection, what is under the pointer - and never an action:
+     buttons are black, white or red, so a blue edge always means
+     "this is the thing you are working on".                          */
+  --ui-accent:      #3ba1f8;
+  --ui-accent-dark: #1b87e0;
+  --ui-accent-tint: #eaf5fe;
+
+  /* The drag insertion line. Same blue, told apart by weight: a solid
+     4px bar against 1px hairlines everywhere else. Its own name so it
+     can diverge again without hunting through the stylesheet. */
+  --ui-drop-line:   var(--ui-accent);
+
+  /* --- neutral scale ----------------------------------------------
+     Flat greys. The site's neutrals carry a warm cast from its brand;
+     these deliberately do not.                                      */
+  --ui-ink:       #17181a;
+  --ui-graphite:  #232529;
+  --ui-grey-700:  #4a4d52;
+  --ui-grey-500:  #6b7076;
+  --ui-grey-300:  #adb2b8;
+  --ui-grey-200:  #dfe1e4;
+  --ui-grey-100:  #f1f2f4;
+
+  --ui-white:     #ffffff;
+  --ui-off-white: #fafbfc;
+  --ui-paper:     #f6f7f8;   /* app background behind the panes */
+  --ui-line:      #e3e5e8;
+  --ui-line-soft: #eef0f2;
+
+  /* --- state ------------------------------------------------------
+     Kept in colour: these carry meaning, not decoration.            */
+  --ui-danger:      #c0392b;
+  --ui-danger-dark: #a5301f;
+  --ui-danger-tint: #fbeced;
+  --ui-warning:     #b7791f;
+  --ui-warning-tint:#fdf4e3;
+  --ui-success:     #2f7d4f;
+  --ui-success-tint:#eaf4ee;
+
+  /* --- typography ------------------------------------------------- */
+  --ui-font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+                  Roboto, "Helvetica Neue", Arial, sans-serif;
+  --ui-font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+
+  --ui-fs-xs:   0.75rem;    /* 12px - meta, captions, table labels */
+  --ui-fs-sm:   0.8125rem;  /* 13px - dense UI                     */
+  --ui-fs-base: 0.9375rem;  /* 15px - all form controls and UI text */
+  --ui-fs-md:   1.0625rem;  /* 17px                                */
+  --ui-fs-lg:   1.25rem;    /* 20px                                */
+  --ui-fs-xl:   1.5rem;     /* 24px                                */
+  --ui-fs-2xl:  1.875rem;   /* 30px                                */
+  --ui-fs-3xl:  2.375rem;   /* 38px - screen headings              */
+
+  --ui-lh-snug: 1.3;
+  --ui-tracking-tight: -0.03em;
+
+  /* --- spacing (8px grid) ------------------------------------------ */
+  --ui-s-1: 4px;   --ui-s-2: 8px;   --ui-s-3: 12px;  --ui-s-4: 16px;
+  --ui-s-5: 24px;  --ui-s-6: 32px;  --ui-s-7: 40px;  --ui-s-8: 56px;
+  --ui-s-9: 72px;
+
+  /* --- form controls ------------------------------------------------
+     Every input, select and textarea shares this height, type size,
+     padding and radius so the forms read as one system.             */
+  --ui-control-h:      40px;
+  --ui-control-px:     12px;
+  --ui-control-fs:     var(--ui-fs-base);
+  --ui-control-radius: 10px;
+  --ui-control-border: 1px solid var(--ui-line);
+  --ui-control-bg:     var(--ui-white);
+
+  /* --- surfaces ---------------------------------------------------- */
+  --ui-radius-sm:   8px;
+  --ui-radius:      12px;
+  --ui-radius-lg:   20px;
+  --ui-radius-pill: 999px;
+
+  --ui-shadow-sm:     0 1px 2px rgba(20, 21, 23, .06);
+  --ui-shadow:        0 4px 16px rgba(20, 21, 23, .07);
+  --ui-shadow-lg:     0 18px 48px rgba(20, 21, 23, .13);
+  --ui-shadow-dialog: 0 24px 64px rgba(20, 21, 23, .18);
+
+  --ui-ring: 0 0 0 3px rgba(59, 161, 248, .28);
+
+  /* --- roles ------------------------------------------------------
+     Places where one light value does two jobs that dark mode has to
+     tell apart. In light they are the palette above under another name,
+     so nothing drawn in light mode changes.                          */
+  /* Behind the work in the centre pane, and the edges between panes. */
+  --ui-workspace: var(--ui-white);
+  --ui-edge:      var(--ui-line);
+  /* A track something sits in - the panel's tab bar, a disabled field. */
+  --ui-sunken:    var(--ui-grey-100);
+  /* What is chosen: the current nav item, a pressed segment or tool. */
+  --ui-selected:     var(--ui-ink);
+  --ui-selected-ink: var(--ui-white);
+  --ui-toast:        var(--ui-ink);
+  --ui-toast-ink:    var(--ui-white);
+  /* Text on a coloured fill - blue, red, amber - which stays white. */
+  --ui-on-colour:    #ffffff;
+  /* A red button's fill, apart from the red that marks text and icons. */
+  --ui-danger-fill:  var(--ui-danger);
+  /* A slice's name tag on the canvas, told apart from an object's. */
+  --ui-slice:        #7a5a00;
+  --ui-slice-tint:   #fdf1cc;
+  --ui-backdrop:     rgba(27, 27, 27, .42);
+  /* A control floating over a picture, which can be any colour. */
+  --ui-float:        rgba(255, 255, 255, .94);
+  /* A faint shade that reads on any surface: code, chequerboards. */
+  --ui-shade:        rgba(0, 0, 0, .05);
+  /* What dims a hidden slice. Only ever drawn on the canvas, which keeps
+     this light set in dark mode, so it has no dark value. */
+  --ui-veil:         rgba(255, 255, 255, .55);
+  /* What a picture sits on in the library and the pickers. A logo can be
+     dark or light artwork on nothing at all, and both have to show. */
+  --ui-preview:      var(--ui-grey-100);
+  --ui-select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5l5-5' fill='none' stroke='%236b6b6b' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+
+  /* --- layout ------------------------------------------------------ */
+  --ui-rail-w:      64px;
+  --ui-rail-open-w: 262px;
+
+  --ui-ease: cubic-bezier(.22, .61, .36, 1);
+}
+
+/* ===================================================================
+   Dark
+
+   The greys are Photoshop's dark interface, measured off a screen grab of
+   it rather than guessed at: its workspace, its
+   panels, its recessed fields and their borders, the row it highlights, and
+   its five text greys. They land where they do in Photoshop - panes at the
+   panel grey, the centre at the workspace behind them, fields darker than
+   the panel they sit on - and the text greys keep the contrast steps the
+   light set has (ink 10:1, secondary 9:1, muted 6:1 on a panel).
+
+   The grab has no colour in it, so the rest is chosen here. The blue stays
+   the blue. Red, amber and green are lifted until they read as text on a
+   dark panel, which the light values do not; a red *button* keeps a deeper
+   red of its own so white still reads on it.
+   =================================================================== */
+
+:root[data-appearance="dark"] {
+  color-scheme: dark;
+
+  --ui-accent-dark: #7cc0fb;
+  --ui-accent-tint: rgba(59, 161, 248, .16);
+
+  --ui-ink:       #e7e7e7;   /* Photoshop's active tab */
+  --ui-graphite:  #d6d6d6;
+  --ui-grey-700:  #d6d6d6;   /* icons, and text one step down */
+  --ui-grey-500:  #adadad;   /* labels: "Opacity:", "Lock:" */
+  --ui-grey-300:  #808080;   /* the panel menu, a disabled icon */
+  /* Washes rather than solids, so a hover is the same step up on the
+     workspace as on a panel. */
+  --ui-grey-200:  rgba(255, 255, 255, .14);
+  --ui-grey-100:  rgba(255, 255, 255, .07);
+
+  --ui-white:     #323232;   /* panels */
+  --ui-off-white: #2b2b2b;   /* a panel's list area */
+  --ui-paper:     #191919;   /* the workspace behind everything */
+  --ui-line:      #474747;   /* a field's border */
+  --ui-line-soft: #2b2b2b;   /* the rule between two layer rows */
+
+  --ui-danger:       #ff7b72;
+  --ui-danger-dark:  #b33b32;
+  --ui-danger-tint:  rgba(255, 123, 114, .14);
+  --ui-danger-fill:  #c9443a;
+  --ui-warning:      #e3b341;
+  --ui-warning-tint: rgba(227, 179, 65, .14);
+  --ui-success:      #5cc98a;
+  --ui-success-tint: rgba(92, 201, 138, .14);
+
+  --ui-control-bg: #292929;  /* the Kind, Normal and Opacity fields */
+
+  --ui-shadow-sm:     0 1px 2px rgba(0, 0, 0, .4);
+  --ui-shadow:        0 4px 16px rgba(0, 0, 0, .45);
+  --ui-shadow-lg:     0 18px 48px rgba(0, 0, 0, .55);
+  --ui-shadow-dialog: 0 24px 64px rgba(0, 0, 0, .6);
+  --ui-ring: 0 0 0 3px rgba(59, 161, 248, .4);
+
+  --ui-workspace:    #191919;
+  --ui-edge:         #212121;   /* the seam between toolbar and panel */
+  --ui-sunken:       #212121;   /* the strip the inactive tabs sit in */
+  --ui-selected:     #4a4a4a;   /* the selected layer row */
+  --ui-selected-ink: #ffffff;
+  --ui-toast:        #535353;
+  --ui-toast-ink:    #ffffff;
+  --ui-slice:        #e3b341;
+  --ui-slice-tint:   rgba(227, 179, 65, .16);
+  --ui-backdrop:     rgba(0, 0, 0, .6);
+  --ui-float:        rgba(50, 50, 50, .94);
+  --ui-shade:        rgba(255, 255, 255, .06);
+  --ui-preview:      #535353;   /* Photoshop's medium grey: fair to black and white alike */
+  --ui-select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5l5-5' fill='none' stroke='%23adadad' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}

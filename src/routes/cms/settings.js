@@ -1,0 +1,112 @@
+import { html, redirect, parseForm } from '../../lib/http.js';
+import { esc } from '../../lib/html.js';
+import { icon } from '../../views/icons.js';
+import { cmsLayout, cmsHead } from '../../views/cms/layout.js';
+import { field, textarea, select, mediaPicker } from '../../views/cms/parts.js';
+import { SCHEMA, all, set, parseLinks, linksToText } from '../../lib/settings.js';
+import { media, pages } from '../../models.js';
+import { config } from '../../config.js';
+
+/**
+ * Site settings — everything that makes one installation different from the
+ * next. Kept deliberately small: identity, logos, footer, and where forms
+ * deliver. Anything secret (API keys, ports) stays in the environment.
+ */
+export function registerSettings(router, guard) {
+  router.get('/cms/settings', guard((req, res, { user }) => {
+    const values = all();
+    const pick = (key) => (values[key] ? media.byId(values[key]) : null);
+
+    const center = `
+      ${cmsHead('Settings')}
+      <hr class="rule">
+      <form method="post" action="/cms/settings" id="settings-form" class="stack" style="max-width:640px">
+
+        <section class="panel">
+          <h2 class="h-section" style="margin-bottom:var(--ui-s-4)">Identity</h2>
+          <div class="stack">
+            ${field({ label: SCHEMA.site_name.label, name: 'site_name',
+              value: values.site_name, hint: SCHEMA.site_name.hint })}
+            ${field({ label: SCHEMA.site_url.label, name: 'site_url',
+              value: values.site_url, hint: SCHEMA.site_url.hint })}
+            ${field({ label: SCHEMA.site_language.label, name: 'site_language',
+              value: values.site_language, hint: SCHEMA.site_language.hint })}
+            ${field({ label: SCHEMA.site_country.label, name: 'site_country',
+              value: values.site_country, hint: SCHEMA.site_country.hint })}
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2 class="h-section" style="margin-bottom:var(--ui-s-4)">Logos</h2>
+          <div class="stack">
+            ${mediaPicker({ name: 'logo_media', item: pick('logo_media'),
+              label: SCHEMA.logo_media.label, hint: SCHEMA.logo_media.hint })}
+            ${mediaPicker({ name: 'logo_dark_media', item: pick('logo_dark_media'),
+              label: SCHEMA.logo_dark_media.label, hint: SCHEMA.logo_dark_media.hint })}
+            ${mediaPicker({ name: 'favicon_media', item: pick('favicon_media'),
+              label: SCHEMA.favicon_media.label, hint: SCHEMA.favicon_media.hint })}
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2 class="h-section" style="margin-bottom:var(--ui-s-4)">Articles</h2>
+          ${select({ label: SCHEMA.article_parent.label, name: 'article_parent',
+            value: values.article_parent ?? '',
+            options: pages.list().map((p) => ({ value: p.id, label: `${p.title} — ${p.permalink}` })),
+            placeholder: 'No page — articles sit at the site root',
+            hint: SCHEMA.article_parent.hint })}
+        </section>
+
+        <section class="panel">
+          <h2 class="h-section" style="margin-bottom:var(--ui-s-4)">Forms</h2>
+          ${field({ label: SCHEMA.contact_email.label, name: 'contact_email',
+            value: values.contact_email, type: 'email', hint: SCHEMA.contact_email.hint })}
+        </section>
+
+        <section class="panel">
+          <h2 class="h-section" style="margin-bottom:var(--ui-s-4)">Footer</h2>
+          <div class="stack">
+            ${textarea({ label: SCHEMA.footer_text.label, name: 'footer_text',
+              value: values.footer_text, rows: 4, hint: SCHEMA.footer_text.hint })}
+            ${field({ label: SCHEMA.footer_note.label, name: 'footer_note',
+              value: values.footer_note, hint: SCHEMA.footer_note.hint })}
+            ${textarea({ label: SCHEMA.social_links.label, name: 'social_links',
+              value: linksToText(values.social_links), rows: 4, hint: SCHEMA.social_links.hint })}
+          </div>
+        </section>
+      </form>`;
+
+    // The button lives outside the form element, so associate it by id.
+    const footer = `
+      <span class="cms-actions__status">Changes take effect immediately.</span>
+      <button class="btn btn--accent" type="submit" form="settings-form">Save settings</button>`;
+
+    const right = `
+      <h2 class="h-tool" style="margin-bottom:var(--ui-s-4)">Environment</h2>
+      <p class="tiny muted" style="margin:0 0 var(--ui-s-4)">
+        These come from the environment, not from here, because they carry secrets
+        or decide how the server starts.</p>
+      <dl class="env-list">
+        <dt>Sign-in</dt><dd>${config.authDisabled
+          ? 'Disabled — <code>AUTH_DISABLED=0</code> turns it on' : 'One-time code'}</dd>
+        <dt>Mail</dt><dd>${config.brevoApiKey
+          ? 'Brevo' : 'Offline — written to <code>data/outbox/</code>'}</dd>
+        <dt>Sender</dt><dd>${esc(config.mail.fromEmail)}</dd>
+        <dt>Node port</dt><dd>${config.port}</dd>
+      </dl>`;
+
+    html(res, cmsLayout({ title: 'Settings', user, path: '/cms/settings', center, right, footer,
+      data: { page: 'settings' } }));
+  }, 'admin'));
+
+  router.post('/cms/settings', guard(async (req, res) => {
+    const { fields } = await parseForm(req);
+    for (const [key, spec] of Object.entries(SCHEMA)) {
+      if (!(key in fields)) continue;
+      if (spec.type === 'links') set(key, parseLinks(fields[key]));
+      else if (spec.type === 'media' || spec.type === 'page') set(key, Number(fields[key]) || null);
+      else set(key, String(fields[key] ?? '').trim());
+    }
+    redirect(res, '/cms/settings?sparad=1');
+  }, 'admin'));
+}

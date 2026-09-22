@@ -1,0 +1,578 @@
+/* ===================================================================
+   Smartare Mat - public site
+   =================================================================== */
+
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--fs-md);
+  line-height: var(--lh-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+a { color: inherit; text-decoration: none; }
+/* height:auto is load-bearing: with a width/height pair on the tag and only
+   max-width constraining it, a narrow column squeezes the width while the
+   height attribute holds, stretching the image into a column thousands of
+   pixels tall. Class rules that set a height on purpose still win. */
+img, svg, video { max-width: 100%; height: auto; display: block; }
+/* A <picture> only carries the WebP beside its fallback. It draws no box of
+   its own, so the <img> inside sizes against the frame exactly as it did
+   before it was wrapped - `height: 100%` in a card included. */
+picture { display: contents; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+/* `hidden` must win over any display rule set by a utility class. */
+[hidden] { display: none !important; }
+
+
+h1, h2, h3, h4 { margin: 0 0 var(--s-4); font-family: var(--font-heading); line-height: var(--lh-tight); letter-spacing: var(--tracking-tight); font-weight: 700; }
+h1 { font-size: clamp(2.25rem, 5.2vw, var(--fs-5xl)); }
+h2 { font-size: clamp(1.75rem, 3.6vw, var(--fs-3xl)); }
+h3 { font-size: var(--fs-xl); line-height: var(--lh-snug); }
+h4 { font-size: var(--fs-lg); line-height: var(--lh-snug); }
+p  { margin: 0 0 var(--s-4); }
+p:last-child { margin-bottom: 0; }
+
+/* The gutter is a theme value, so a site can breathe more or less at the
+   window edges without either measure being restated here. */
+.shell { width: min(var(--shell-max), calc(100% - var(--gutter) * 2)); margin-inline: auto; }
+.body-col { width: min(var(--body-max), calc(100% - var(--gutter) * 2)); margin-inline: auto; }
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+}
+
+/* ------------------------------------------------------------ topbar */
+
+.topbar { background: #000; color: var(--off-white); position: sticky; top: 0; z-index: 60; }
+.topbar__inner {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas: "logo extra tools" "logo main main";
+  align-items: center;
+  column-gap: var(--s-6);
+  padding-block: var(--s-3);
+  min-height: 114px;
+}
+
+.topbar__logo { grid-area: logo; align-self: center; }
+.topbar__logo img { height: 56px; width: auto; }
+
+.topbar__extra { grid-area: extra; justify-self: end; display: flex; align-items: center; gap: var(--s-5); }
+.extramenu { display: flex; gap: var(--s-5); list-style: none; margin: 0; padding: 0; }
+.extramenu a {
+  font-size: var(--fs-xs); color: var(--grey-300); letter-spacing: .02em;
+  transition: color .15s var(--ease);
+}
+.extramenu a:hover, .extramenu a[aria-current="page"] { color: var(--white); }
+
+
+/* main menu */
+.mainmenu {
+  grid-area: main;
+  /* The `main` area covers only the columns beside the logo, so centring
+     within it pushes the menu right by half the logo's width. Spanning every
+     column instead centres it on the shell, and so over the content column
+     below. The logo keeps its own row-spanning cell underneath; grid items
+     are allowed to overlap. */
+  grid-column: 1 / -1;
+  justify-self: center;
+}
+.mainmenu__list { display: flex; gap: var(--s-2); list-style: none; margin: 0; padding: 0; flex-wrap: wrap; justify-content: center; }
+.mainmenu__link {
+  display: block; padding: 10px var(--s-3); font-size: var(--fs-base); font-weight: 500;
+  color: var(--grey-200); border-radius: var(--radius-sm); transition: color .15s var(--ease), background .15s var(--ease);
+}
+.mainmenu__link:hover { color: var(--white); background: rgba(255, 255, 255, .08); }
+/* The current section is marked by a line, not a shade.
+   It was an inset box-shadow, which follows the link's border-radius - so the
+   "line" curved up at both ends and read as a smudge under the word rather
+   than a marker beside it. A pseudo-element stays straight whatever the
+   corner does, and can be as thick as it needs to be.
+   The colour is the theme's accent rather than the logotype's yellow, so
+   "which one am I on" is said in the same colour the site says everything
+   else interactive in. `--accent` is the fallback for a theme whose palette
+   no longer carries that id. */
+.mainmenu__item.is-active > .mainmenu__link { color: var(--white); position: relative; }
+.mainmenu__item.is-active > .mainmenu__link::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0;
+  height: 4px; background: var(--c-accent, var(--accent));
+}
+
+.mainmenu__item { position: relative; }
+.dropdown {
+  position: absolute; left: 0; top: 100%; min-width: 260px; padding: 8px;
+  background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow-lg);
+  display: none; z-index: 70;
+}
+.mainmenu__item:hover > .dropdown, .mainmenu__item:focus-within > .dropdown { display: block; }
+.dropdown a {
+  display: block; padding: 9px 12px; border-radius: var(--radius-sm);
+  color: var(--ink); font-size: var(--fs-base);
+}
+.dropdown a:hover { background: var(--grey-100); }
+
+.topbar__toggle {
+  display: none; grid-area: tools; justify-self: end;
+  background: none; border: 0; color: var(--white);
+  cursor: pointer; width: 44px; height: 44px; padding: 0; place-items: center;
+  /* Pull the glyph back to the shell's edge: with the box gone there is
+     nothing but whitespace between the bars and the margin. */
+  margin-right: -4px;
+}
+/* Heavier than the 1.6 the icon set uses elsewhere - at this size the default
+   looks spindly, and stroke-width scales with the viewBox, so 2.1 user units
+   render at roughly 3px. */
+.topbar__toggle svg { stroke-width: 2.1; }
+/* Guarded: a tap leaves :hover latched on a touch screen, so the cross would
+   stay yellow after the menu closed. (hover: hover) matches only pointers
+   that can genuinely hover. :focus-visible still covers keyboards. */
+@media (hover: hover) {
+  .topbar__toggle:hover { color: var(--brand-yellow); }
+}
+/* The button carries both glyphs and shows one: a cross once the menu is
+   open, so the control reads as "close" rather than repeating "menu". The
+   swap is CSS off [data-open], so the toggle script stays as it was. */
+.topbar__toggle-close { display: none; }
+.topbar[data-open="true"] .topbar__toggle-open { display: none; }
+.topbar[data-open="true"] .topbar__toggle-close { display: block; }
+
+/* --------------------------------------------------------- sub menu */
+
+.submenu { background: var(--graphite); }
+.submenu__list {
+  display: flex; gap: var(--s-1); list-style: none; margin: 0; padding: 0;
+  justify-content: center; flex-wrap: wrap;
+}
+.submenu__list a {
+  display: block; padding: 13px var(--s-4); font-size: var(--fs-base); color: var(--grey-300);
+  transition: color .15s var(--ease);
+}
+.submenu__list a:hover { color: var(--white); }
+/* The same marker one level down, in the same colour - "which one am I on"
+   should not be said in two colours depending on which bar it is said in.
+   Left at 2px: a sub menu is the quieter of the two, and the weight is what
+   says so. No radius here, so the inset shadow is already a straight line. */
+.submenu__list li.is-active > a { color: var(--white); box-shadow: inset 0 -2px 0 0 var(--c-accent, var(--accent)); }
+
+/* ------------------------------------------------------- page header */
+
+.main { flex: 1 0 auto; }
+
+/* A preview has to be impossible to mistake for the live page, so it says so
+   on the page rather than only in whatever tab opened it.
+
+   Deliberately not themed. These are literal values, not tokens, because the
+   bar has to stay legible and stay recognisable whatever a site's palette
+   does - a theme could otherwise render its own preview bar invisible. Quiet
+   on purpose too: it is read once and then looked past for an afternoon. */
+.preview-bar {
+  position: sticky; top: 0; z-index: 40;
+  display: flex; align-items: center; justify-content: center; gap: var(--s-4);
+  flex-wrap: wrap; padding: var(--s-2) var(--s-4);
+  background: #262625; color: #999999;
+  font-size: var(--fs-sm); text-align: center;
+}
+.preview-bar strong { color: #cfcfcd; font-weight: 600; }
+.preview-bar a { color: #999999; text-decoration: underline; text-underline-offset: 2px; }
+.preview-bar a:hover { color: #ffffff; }
+
+/* -------------------------------------------------------- password gate
+
+   What a locked page draws instead of its content. Literal colours rather
+   than theme tokens, for the same reason the preview bar uses them: this has
+   to stay legible whatever a site's palette does, including a palette that
+   makes every surface dark. The card deliberately looks like the CMS - it is
+   the tool speaking, not the site. */
+
+.gate { display: grid; place-items: center; padding: var(--s-9) var(--s-4); min-height: 52vh; }
+.gate__card {
+  width: 100%; max-width: 360px;
+  display: flex; flex-direction: column; gap: 12px;
+  padding: 28px; border-radius: 14px;
+  background: #ffffff; color: #1e1e1e;
+  box-shadow: 0 1px 2px rgba(0,0,0,.06), 0 12px 32px rgba(0,0,0,.12);
+}
+.gate__title { font-size: 1.25rem; line-height: 1.25; letter-spacing: -.02em; margin: 0; }
+.gate__note { font-size: .875rem; color: #6b6b6b; margin: -4px 0 4px; }
+.gate__error { font-size: .875rem; color: #c0362c; margin: 0; }
+.gate__input {
+  width: 100%; min-height: 40px; padding: 0 12px;
+  /* The field is autofocused, so the browser scrolls it into view - and the
+     sticky top bar then covers the card's own title. Same reason anchored
+     headings carry this in blocks.css. */
+  scroll-margin-top: calc(var(--topbar-h, 96px) + var(--s-6));
+  font: inherit; font-size: .9375rem; color: #1e1e1e;
+  background: #ffffff; border: 1px solid #d4d4d1; border-radius: 8px;
+}
+.gate__input:focus { outline: 2px solid #357abb; outline-offset: 1px; border-color: #357abb; }
+.gate__button {
+  min-height: 40px; padding: 0 16px;
+  font: inherit; font-size: .9375rem; font-weight: 600;
+  color: #ffffff; background: #1e1e1e; border: 1px solid #1e1e1e;
+  border-radius: 8px; cursor: pointer;
+}
+.gate__button:hover { background: #3d3d3a; border-color: #3d3d3a; }
+
+/* .breadcrumbs itself lives in blocks.css: the trail is both page furniture
+   and an object an author can place, and the editor canvas loads blocks.css
+   but not this file. One set of rules, drawn the same in both. */
+.breadcrumbs { padding-top: var(--s-5); }
+
+.page-header { padding: var(--s-7) 0 var(--s-6); }
+.page-header h1 { font-size: clamp(2rem, 4.2vw, var(--fs-3xl)); margin-bottom: var(--s-3); }
+.page-header__lead { font-size: var(--fs-lg); color: var(--grey-700); max-width: 66ch; }
+.page-header + .page-rule { border: 0; border-top: 1px solid var(--line); margin: 0 0 var(--s-6); }
+
+/* --------------------------------------------------------- hero (landing) */
+
+.hero { padding: var(--s-9) 0 var(--s-8); }
+.hero__grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: var(--s-8); align-items: center; }
+.hero h1 { margin-bottom: var(--s-5); }
+.hero__lead { font-size: var(--fs-lg); color: var(--grey-700); max-width: 52ch; }
+.hero__media { border-radius: var(--radius-lg); overflow: hidden; }
+.hero__media:empty { background: var(--sand); }
+.hero__media img { width: 100%; aspect-ratio: 7 / 6; object-fit: cover; }
+.hero__actions { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-top: var(--s-6); }
+
+.eyebrow {
+  display: inline-flex; align-items: center; gap: var(--s-2);
+  font-size: var(--fs-xs); font-weight: 600; letter-spacing: var(--tracking-wide);
+  text-transform: uppercase; color: var(--accent); margin-bottom: var(--s-4);
+}
+.eyebrow::before {
+  content: ""; width: 7px; height: 7px; background: var(--brand-yellow); transform: rotate(45deg);
+}
+
+/* ------------------------------------------------------------ buttons */
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2);
+  min-height: var(--control-h); padding: 0 var(--s-5);
+  font-family: inherit; font-size: var(--fs-base); font-weight: 600; line-height: 1;
+  border: 1px solid var(--ink); border-radius: var(--radius-pill);
+  background: transparent; color: var(--ink); cursor: pointer;
+  transition: background .15s var(--ease), color .15s var(--ease),
+              border-color .15s var(--ease), transform .12s var(--ease);
+  text-align: center;
+}
+.btn:hover { background: var(--ink); color: var(--white); }
+.btn:active { transform: translateY(1px); }
+.btn--primary { background: var(--ink); color: var(--white); }
+.btn--primary:hover { background: var(--graphite); border-color: var(--graphite); }
+.btn--accent { background: var(--accent); border-color: var(--accent); color: var(--white); }
+.btn--accent:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
+.btn--ghost { border-color: var(--line); color: var(--grey-700); background: var(--white); }
+.btn--ghost:hover { background: var(--white); border-color: var(--ink); color: var(--ink); }
+.btn[disabled], .btn[aria-disabled="true"] {
+  opacity: .45; pointer-events: none;
+}
+
+.textlink {
+  color: var(--accent); font-weight: 500;
+  border-bottom: 1px solid rgba(53, 122, 187, .35); padding-bottom: 1px;
+}
+.textlink:hover { border-bottom-color: var(--accent); }
+
+/* ------------------------------------------------------------- blocks */
+
+.blocks { padding-bottom: var(--s-9); }
+.block { margin-bottom: var(--s-7); }
+.block:last-child { margin-bottom: 0; }
+
+/* Nothing here spaces one slice from the next. A new slice is *created* with
+   a bottom margin instead (cms-editor.js), so the number is stored on the
+   page, shows in the spacing fields, draws on the canvas, and can be typed
+   down to 0. A blanket rule here gave every page a gap its editor insisted
+   was 0 - and made two white bands read as two, with a stripe of the page's
+   own paper between them. */
+
+.placeholder-note {
+  border: 1px dashed var(--line); border-radius: var(--radius);
+  padding: var(--s-5); color: var(--grey-500); font-size: var(--fs-base); background: var(--white);
+}
+
+/* -------------------------------------------------------- article cards */
+
+.article-feature {
+  display: grid; grid-template-columns: 1fr 1fr; align-items: stretch;
+  background: var(--white); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-sm);
+}
+.article-feature--reverse .article-feature__media { order: -1; }
+.article-feature__media:empty { background: var(--sand); }
+.article-feature__media img { width: 100%; height: 100%; min-height: 280px; object-fit: cover; }
+.article-feature__body { padding: var(--s-7); display: flex; flex-direction: column; justify-content: center; gap: var(--s-4); }
+.article-feature__lead { font-size: var(--fs-lg); line-height: 1.5; color: var(--graphite); margin: 0; }
+
+.tag {
+  display: inline-block; font-size: var(--fs-xs); font-weight: 600;
+  letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--accent);
+}
+
+.card-grid { display: grid; gap: var(--s-5); grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.card {
+  background: var(--white); border-radius: var(--radius-lg); overflow: hidden;
+  box-shadow: var(--shadow-sm); display: flex; flex-direction: column;
+  transition: box-shadow .18s var(--ease), transform .18s var(--ease);
+}
+a.card:hover { box-shadow: var(--shadow); transform: translateY(-2px); }
+/* Same rule as an image object's frame: a well that holds a picture adds
+   nothing behind it, because the picture may be transparent and the tint is
+   not the author's choice. Empty is the exception - a card whose article has
+   no lead image keeps its shape rather than opening a blank hole above the
+   title. */
+.card__media { aspect-ratio: 16 / 10; }
+.card__media:empty { background: var(--sand); }
+.card__media img { width: 100%; height: 100%; object-fit: cover; }
+.card__body { padding: var(--s-5); display: flex; flex-direction: column; gap: var(--s-2); flex: 1; }
+.card__body h3 { margin: 0; font-size: var(--fs-lg); }
+.card__excerpt { color: var(--grey-500); font-size: var(--fs-base); margin: 0; }
+.card__meta { font-size: var(--fs-xs); color: var(--grey-500); margin-top: auto; padding-top: var(--s-3); }
+
+/* An article's subjects, on the article page. Several now, so they need to
+   sit apart from each other rather than run together. */
+a.tag:hover { text-decoration: underline; text-underline-offset: 3px; }
+.tag + .tag { margin-left: var(--s-3); }
+
+/* ------------------------------------------------------- feeds & chips */
+
+/* The subject filter. These have been in the markup of the news index since
+   it was written and were never styled - so they drew as a row of plain
+   links, which is not what a chip is. */
+.chip-row { display: flex; flex-wrap: wrap; gap: var(--s-2); padding-top: var(--s-5); }
+.chip {
+  display: inline-flex; align-items: center; min-height: 32px; padding: 0 var(--s-4);
+  border: 1px solid var(--line); border-radius: var(--radius-pill, 999px);
+  background: var(--white); color: var(--graphite);
+  font-size: var(--fs-sm); font-weight: 600; white-space: nowrap;
+  transition: background .14s var(--ease), border-color .14s var(--ease), color .14s var(--ease);
+}
+.chip:hover { border-color: var(--graphite); color: var(--ink); }
+.chip.is-active { background: var(--ink); border-color: var(--ink); color: var(--white); }
+
+.article-feed { display: grid; gap: var(--s-5); }
+/* The wide layout stacks; the grid and list bring their own arrangement. */
+.article-features { display: grid; gap: var(--s-5); }
+
+.feed-more { display: flex; justify-content: center; padding-top: var(--s-2); }
+/* The sentinel for a feed that keeps loading: it takes up height so it can be
+   scrolled to at all, and says nothing, because it is not a control. */
+.feed-more--auto { min-height: 1px; }
+.article-feed[data-loading] .feed-more::after {
+  content: ''; width: 18px; height: 18px; border-radius: 50%;
+  border: 2px solid var(--line); border-top-color: var(--graphite);
+  animation: feed-spin .7s linear infinite;
+}
+@keyframes feed-spin { to { transform: rotate(360deg); } }
+
+.article-list { display: grid; gap: var(--s-3); }
+.article-row {
+  display: grid; grid-template-columns: 120px 1fr auto; gap: var(--s-5); align-items: center;
+  background: var(--white); padding: var(--s-4) var(--s-5); border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+.article-row time { font-size: var(--fs-sm); color: var(--grey-500); }
+.article-row h3 { margin: 0; font-size: var(--fs-lg); }
+
+/* --------------------------------------------------------- article page */
+
+/* An article is read rather than browsed, so it gets a clear white ground -
+   no paper tint behind the words, and no sand behind the pictures. Scoped to
+   the body class so the tint stays everywhere the site is being browsed. */
+body.is-article { background: var(--white); }
+
+/* An article's own head. Larger than a page's, because a page's title is a
+   label on a place and this is the thing you came to read. */
+.page-header--article h1 {
+  font-size: clamp(2.5rem, 6vw, var(--fs-4xl));
+  letter-spacing: var(--tracking-tight); line-height: var(--lh-snug);
+}
+.article-subjects { margin-bottom: var(--s-3); }
+.article-meta { margin-top: var(--s-5); font-size: var(--fs-sm); color: var(--grey-500); }
+
+/* The body is slices and objects, so blocks.css draws all of it - the same
+   rules a page's body uses, which is the point of writing on the same canvas.
+   Only the quote differs: in prose the accent reads better than the brand
+   mark, which belongs beside the logo on a designed page. */
+.article-body .b-text blockquote {
+  border-left-color: var(--accent);
+  font-size: clamp(1.25rem, 2.4vw, var(--fs-xl));
+  line-height: var(--lh-snug); color: var(--ink);
+}
+
+/* The lead image, built like a b-image object: the tint and the rounding are
+   the frame's, and the caption sits below it rather than on the sand.
+   `margin:0` is load-bearing - a bare <figure> carries the browser's own
+   `1em 40px`, which is what was holding the image off both edges of the
+   column and reading as "centred but choked". */
+.article-hero { margin: 0 0 var(--s-6); }
+.article-hero__frame { border-radius: var(--radius-lg); overflow: hidden; }
+.article-hero__frame img { width: 100%; }
+.article-hero figcaption {
+  margin-top: var(--s-3); font-size: var(--fs-base); font-style: italic; color: var(--grey-500);
+}
+
+/* --------------------------------------------------------- form controls */
+
+/* Every control shares one height, type size, padding and radius. */
+input[type="text"], input[type="email"], input[type="tel"], input[type="url"],
+input[type="number"], input[type="search"], input[type="password"], select, textarea {
+  width: 100%;
+  min-height: var(--control-h);
+  padding: 9px var(--control-px);
+  font-family: inherit;
+  font-size: var(--control-fs);
+  line-height: 1.4;
+  color: var(--ink);
+  background: var(--control-bg);
+  border: var(--control-border);
+  border-radius: var(--control-radius);
+  transition: border-color .15s var(--ease), box-shadow .15s var(--ease);
+  appearance: none;
+}
+textarea { min-height: 140px; resize: vertical; display: block; }
+select {
+  padding-right: 36px; cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5l5-5' fill='none' stroke='%236b6b6b' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 13px center; background-size: 12px 8px;
+}
+input[type="checkbox"] {
+  width: 18px; height: 18px; min-height: 0; flex: 0 0 18px; padding: 0;
+  border: 1.5px solid var(--grey-300); border-radius: 5px; cursor: pointer;
+}
+input[type="checkbox"]:checked {
+  background: var(--accent); border-color: var(--accent);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M3 7.4 5.8 10 11 4.2' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-size: 14px; background-position: center; background-repeat: no-repeat;
+}
+input:hover, select:hover, textarea:hover { border-color: var(--grey-300); }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: var(--ring); }
+input::placeholder, textarea::placeholder { color: var(--grey-300); }
+
+.b-field--half { display: inline-grid; }
+
+/* -------------------------------------------------------------- footer */
+
+/* The gap above the footer is the footer's, not the content's. `margin-top`
+   rather than `auto`: `.main` is `flex: 1 0 auto` and already absorbs the free
+   space, so the footer stays at the bottom of a short page without it - and
+   the 60px then reads as the page's own background rather than as padding
+   nobody put on the last slice. */
+.footer {
+  background: var(--footer-bg); color: var(--grey-300);
+  padding: var(--s-8) 0 var(--s-5); margin-top: 60px;
+}
+.footer__grid {
+  display: grid; grid-template-columns: auto 1fr auto; gap: var(--s-8); align-items: start;
+}
+.footer__logo img { height: 64px; width: auto; }
+/* align-items:start matters: stretched to equal heights, the shorter list
+   becomes a grid with spare room, and `align-content` spreads that room
+   between its rows — so two menus of different lengths end up with visibly
+   different spacing. */
+.footer__menus { display: flex; gap: var(--s-9); justify-content: center; align-items: start; }
+.footer__menus ul { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-3); }
+.footer__menus a { font-size: var(--fs-base); color: var(--grey-300); }
+.footer__menus a:hover { color: var(--white); }
+.footer__social { display: flex; align-items: center; gap: var(--s-3); }
+.footer__social span { font-size: var(--fs-base); }
+.footer__social a { display: grid; place-items: center; width: 32px; height: 32px; border-radius: var(--radius-pill); background: rgba(255,255,255,.08); color: var(--grey-300); }
+.footer__social a:hover { background: var(--brand-yellow); color: var(--ink); }
+.footer__social svg { width: 17px; height: 17px; }
+.footer__base {
+  margin-top: var(--s-7); padding-top: var(--s-4); border-top: 1px solid #333;
+  font-size: var(--fs-xs); color: var(--grey-500);
+  display: flex; justify-content: space-between; gap: var(--s-4); flex-wrap: wrap;
+}
+.footer__base a { color: var(--grey-500); }
+.footer__base a:hover { color: var(--grey-300); }
+
+/* --------------------------------------------------------------- misc */
+
+.empty-state {
+  text-align: center; padding: var(--s-9) var(--s-5); color: var(--grey-500);
+  border: 1px dashed var(--line); border-radius: var(--radius-lg); background: var(--white);
+}
+.empty-state h2 { color: var(--ink); }
+
+.section-white { background: var(--white); padding-block: var(--s-8); }
+
+/* --------------------------------------------------------- responsive */
+
+@media (max-width: 1040px) {
+  .topbar__inner {
+    grid-template-columns: 1fr auto;
+    grid-template-areas: "logo toggle";
+    min-height: 76px;
+  }
+  .topbar__logo img { height: 40px; }
+  .topbar__toggle { display: grid; grid-area: toggle; }
+  .topbar__extra { display: none; }
+  .mainmenu { display: none; }
+  /* Open menu stacks: main navigation first, then the secondary links.
+     Named areas keep that order regardless of markup. */
+  .topbar[data-open="true"] .topbar__inner {
+    grid-template-areas: "logo toggle" "main main" "extra extra";
+    /* Never taller than the screen, and scroll inside itself when it would
+       be, so the last items stay reachable on a short viewport. dvh tracks
+       Safari's collapsing address bar; vh is the fallback. */
+    max-height: 100vh;
+    max-height: 100dvh;
+    overflow-y: auto;
+    /* Reaching the end of the menu must not start scrolling the page. */
+    overscroll-behavior: contain;
+  }
+
+  /* Freeze the page while the menu is over it, so a swipe moves the menu
+     rather than the article behind it. Scoped to this breakpoint: left
+     global, a window resized to desktop while open would lock scrolling
+     with no menu in sight. */
+  .is-menu-open, .is-menu-open body { overflow: hidden; }
+  .topbar[data-open="true"] .mainmenu,
+  .topbar[data-open="true"] .topbar__extra {
+    display: flex; justify-self: stretch;
+    padding-top: var(--s-4); border-top: 1px solid #2a2a2a; margin-top: var(--s-3);
+  }
+  .topbar[data-open="true"] .mainmenu { grid-area: main; }
+  .topbar[data-open="true"] .topbar__extra { grid-area: extra; flex-direction: column; align-items: stretch; }
+  .topbar[data-open="true"] .mainmenu__list,
+  .topbar[data-open="true"] .extramenu { flex-direction: column; align-items: stretch; gap: 2px; width: 100%; }
+  .topbar[data-open="true"] .mainmenu__link { padding: 10px var(--s-3); font-size: var(--fs-md); }
+  .topbar[data-open="true"] .extramenu a { display: block; padding: 8px var(--s-3); font-size: var(--fs-base); }
+  /* A full-width underline reads as a divider on narrow screens, so the line
+     stands beside the item instead. Same colour, same weight. */
+  .topbar[data-open="true"] .mainmenu__item.is-active > .mainmenu__link::after {
+    left: 0; right: auto; top: 0; bottom: 0; width: 4px; height: auto;
+  }
+  .dropdown { position: static; display: block; box-shadow: none; background: transparent; padding-left: var(--s-4); }
+  .dropdown a { color: var(--grey-300); font-size: var(--fs-sm); }
+  .dropdown a:hover { background: rgba(255,255,255,.06); }
+  .hero__grid { grid-template-columns: 1fr; }
+  .footer__grid { grid-template-columns: 1fr; gap: var(--s-6); }
+  .footer__menus { justify-content: flex-start; gap: var(--s-8); }
+}
+
+@media (max-width: 760px) {
+  .shell, .body-col { width: calc(100% - 32px); }
+  .block-columns--2, .block-columns--3 { grid-template-columns: 1fr; }
+  .article-feature { grid-template-columns: 1fr; }
+  .article-feature--reverse .article-feature__media { order: 0; }
+  .article-row { grid-template-columns: 1fr; gap: var(--s-2); }
+  .hero { padding-top: var(--s-7); }
+  .block { margin-bottom: var(--s-6); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}

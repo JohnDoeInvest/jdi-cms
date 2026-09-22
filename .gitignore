@@ -1,0 +1,36 @@
+# --- runtime state ---------------------------------------------------
+# The database and uploads are this installation's content, not source.
+data/cms.db
+data/cms.db-wal
+data/cms.db-shm
+data/outbox/*
+!data/outbox/.gitkeep
+
+www/media/*
+!www/media/.gitkeep
+
+# Uploaded typefaces are this installation's, like the media. The one family
+# a fresh install ships is source and stays - without it there is nothing to
+# draw with before somebody uploads their own.
+www/fonts/*
+!www/fonts/inter-variable.woff2
+!www/fonts/inter-variable-latin-ext.woff2
+!www/fonts/README.md
+!www/fonts/inter-LICENSE.txt
+
+# launchd agent output (scripts/autostart.sh)
+data/logs/
+
+# --- not source ------------------------------------------------------
+# assets/ is where screen grabs, design scratch and backups get dropped
+# while something is being talked through. Only the spec and the original
+# demo site there are source; the rest stays on disk, untracked - old.zip
+# included, a superseded earlier build with its own node_modules.
+assets/*
+!assets/site-structure.md
+!assets/demowww/
+
+node_modules/
+.DS_Store
+__MACOSX/
+*.log

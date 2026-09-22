@@ -1,0 +1,146 @@
+/* ===================================================================
+   Site design tokens - the brand of the site being edited.
+
+   The CMS does not read this file for its own chrome; it has its own set
+   in cms-tokens.css under --ui-* names. Both load in the editor, because
+   the canvas renders real content and must look exactly like the site,
+   but nothing here reaches the interface around it. Change any of this
+   freely: a site's brand cannot move the editor.
+
+   Palette: graphite greys with Swedish yellow and blue as accents.
+   =================================================================== */
+
+:root {
+  /* --- brand ------------------------------------------------------ */
+  --brand-yellow:      #ffcc1b;   /* from the logotype */
+  --brand-yellow-soft: #f7cd4b;
+  --brand-blue:        #007cc0;   /* from the logotype */
+  --accent:            #357abb;   /* interface accent */
+  --accent-dark:       #2c6499;
+  --accent-tint:       #eaf1f8;
+
+  /* --- graphite scale --------------------------------------------- */
+  --ink:        #1e1e1e;
+  --graphite:   #2c2c2c;
+  --charcoal:   #262626;
+  --footer-bg:  #1b1b1b;
+  --grey-700:   #545454;
+  --grey-500:   #6b6b6b;
+  --grey-300:   #b2b2b2;
+  --grey-200:   #e3e3e3;
+  --grey-100:   #f2f1ef;
+
+  /* --- warm neutrals ---------------------------------------------- */
+  --paper:      #f0ede8;
+  --sand:       #dcd5c6;
+  --white:      #ffffff;
+  --off-white:  #fafafa;
+  --line:       #e2ded4;
+  --line-soft:  #ece9e2;
+
+  /* --- state ------------------------------------------------------ */
+  --danger:      #c0392b;
+  --danger-dark: #a5301f;
+  --danger-tint: #fbeceb;
+  --warning:     #d98b1f;
+  --warning-tint:#fdf3e0;
+  --success:     #2f7d4f;
+  --success-tint:#eaf4ee;
+
+  /* --- typography -------------------------------------------------
+     One coherent scale, used by both site and CMS.                  */
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+               Roboto, "Helvetica Neue", Arial, sans-serif;
+  /* Headings may take a face of their own. Falls back to the body face, so a
+     theme that sets only one font still reads as one system. */
+  --font-heading: var(--font-sans);
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+
+  /* Every step is multiplied by --font-scale, which the theme screen sets and
+     nothing else touches. Keeping the multiplication here rather than
+     re-emitting the scale from the theme means these ten numbers are stated
+     once: change one and every theme follows. */
+  --font-scale: 1;
+
+  --fs-xs:   calc(0.75rem   * var(--font-scale)); /* 12px - meta, captions   */
+  --fs-sm:   calc(0.8125rem * var(--font-scale)); /* 13px - dense UI         */
+  --fs-base: calc(0.9375rem * var(--font-scale)); /* 15px - form controls    */
+  --fs-md:   calc(1.0625rem * var(--font-scale)); /* 17px - body copy        */
+  --fs-lg:   calc(1.25rem   * var(--font-scale)); /* 20px - lead paragraphs  */
+  --fs-xl:   calc(1.5rem    * var(--font-scale)); /* 24px                    */
+  --fs-2xl:  calc(1.875rem  * var(--font-scale)); /* 30px                    */
+  --fs-3xl:  calc(2.375rem  * var(--font-scale)); /* 38px - page headings    */
+  --fs-4xl:  calc(3rem      * var(--font-scale)); /* 48px                    */
+  --fs-5xl:  calc(4rem      * var(--font-scale)); /* 64px - landing hero     */
+  --fs-6xl:  calc(5rem      * var(--font-scale)); /* 80px - display heading  */
+
+  /* --- named type sizes --------------------------------------------
+     The nine sizes the editor's Size menus offer, in pixels at full
+     width. Named for what the panel calls them rather than for a step
+     on an abstract scale: the number changed here is the one attached
+     to the word picked on the object.
+
+     The theme screen overrides all nine; these are what a site without
+     a saved theme draws at. What a phone does with each is blocks.css's
+     business, not a number stored anywhere.
+
+     --fs-* above stays the site's own furniture scale - page titles,
+     captions, form controls, the CMS - and is not offered here. */
+  --h-small:    20px;
+  --h-medium:   24px;
+  --h-large:    30px;
+  --h-xlarge:   48px;
+  --h-display:  80px;
+
+  --t-small:    13px;
+  --t-body:     17px;
+  --t-large:    20px;
+  --t-xlarge:   30px;
+
+  --lh-tight: 1.08;
+  --lh-snug:  1.3;
+  --lh-body:  1.65;
+
+  --tracking-tight: -0.03em;
+  --tracking-wide:   0.08em;
+
+  /* --- spacing (8px grid) ----------------------------------------- */
+  --s-1: 4px;   --s-2: 8px;   --s-3: 12px;  --s-4: 16px;
+  --s-5: 24px;  --s-6: 32px;  --s-7: 40px;  --s-8: 56px;
+  --s-9: 72px;  --s-10: 96px;
+
+  /* --- form controls ----------------------------------------------
+     Every input, select and textarea shares this height, type size,
+     padding and radius so the forms read as one system.             */
+  --control-h:       40px;
+  --control-px:      12px;
+  --control-fs:      var(--fs-base);
+  --control-radius:  10px;
+  --control-border:  1px solid var(--line);
+  --control-bg:      var(--white);
+
+  /* --- surfaces --------------------------------------------------- */
+  --radius-sm: 8px;
+  --radius:    12px;
+  --radius-lg: 20px;
+  /* What the demo site's cards measured, and so what a card defaults to. */
+  --radius-card: 16px;
+  --radius-pill: 999px;
+
+  --shadow-sm: 0 1px 2px rgba(27, 27, 27, .06);
+  --shadow:    0 4px 16px rgba(27, 27, 27, .07);
+  --shadow-lg: 0 18px 48px rgba(27, 27, 27, .13);
+  --shadow-dialog: 0 24px 64px rgba(27, 27, 27, .18);
+
+  --ring: 0 0 0 3px rgba(53, 122, 187, .22);
+
+  /* --- layout ----------------------------------------------------- */
+  /* Measures. The theme screen overrides all four; these are what a site
+     without a saved theme draws at. */
+  --measure-max: 700px;  /* reading measure - the narrow container */
+  --body-max:  1000px;   /* content column                        */
+  --shell-max: 1240px;   /* topbar / footer furniture, wide bands */
+  --gutter:      24px;   /* breathing room at the window edges    */
+
+  --ease: cubic-bezier(.22, .61, .36, 1);
+}

@@ -1,0 +1,1369 @@
+/* ===================================================================
+   Smartare Mat - CMS
+   Layout: cmsTop (50px) + cmsLeft (282px) + cmsCenter + cmsRight (313px)
+   =================================================================== */
+
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--ui-font-sans);
+  font-size: var(--ui-fs-base);
+  line-height: 1.55;
+  color: var(--ui-ink);
+  background: var(--ui-white);
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: inherit; text-decoration: none; }
+img, svg { display: block; max-width: 100%; }
+:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 2px; border-radius: 4px; }
+
+h1, h2, h3, h4 { margin: 0; letter-spacing: var(--ui-tracking-tight); font-weight: 700; line-height: 1.15; }
+.h-page { font-size: var(--ui-fs-3xl); }
+.h-tool { font-size: var(--ui-fs-xl); }
+.h-section { font-size: var(--ui-fs-lg); }
+.muted { color: var(--ui-grey-500); }
+.small { font-size: var(--ui-fs-sm); }
+.tiny { font-size: var(--ui-fs-xs); }
+.strong { font-weight: 600; }
+.stack { display: grid; gap: var(--ui-s-4); }
+.stack-sm { display: grid; gap: var(--ui-s-2); }
+.row { display: flex; align-items: center; gap: var(--ui-s-3); }
+.row-end { display: flex; align-items: center; gap: var(--ui-s-3); justify-content: flex-end; }
+/* min-width: 0 so a row inside a grid never sizes the column to its own
+   natural width. Without it a long filename in a .truncate never got the
+   chance to end in "…": the media Properties panel grew to fit it and
+   scrolled sideways, by 146px for a screenshot's name. */
+.spread { display: flex; align-items: center; justify-content: space-between; gap: var(--ui-s-4); min-width: 0; }
+.grow { flex: 1 1 auto; min-width: 0; }
+.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+hr.rule { border: 0; border-top: 1px solid var(--ui-line); margin: var(--ui-s-5) 0; }
+.icon { flex: 0 0 auto; }
+/* `hidden` must win over any display rule set by a utility class. */
+[hidden] { display: none !important; }
+
+
+/* =============================================================== shell */
+
+.cms {
+  display: grid;
+  grid-template-columns: var(--ui-rail-w) minmax(0, 1fr) 313px;
+  grid-template-areas: "left center right";
+  height: 100vh;
+  overflow: hidden;
+}
+.cms--wide { grid-template-columns: var(--ui-rail-w) minmax(0, 1fr) 480px; }
+.cms--nopanel { grid-template-columns: var(--ui-rail-w) minmax(0, 1fr); grid-template-areas: "left center"; }
+/* Pinned: the rail takes real space again and stops floating. */
+.cms[data-nav="pinned"] { --rail-w: var(--ui-rail-open-w); }
+
+.avatar {
+  width: 32px; height: 32px; border-radius: var(--ui-radius-pill); flex: 0 0 32px; overflow: hidden;
+  background: var(--ui-grey-700); color: var(--ui-white); display: grid; place-items: center;
+  font-size: var(--ui-fs-xs); font-weight: 600;
+}
+.avatar img { width: 100%; height: 100%; object-fit: cover; }
+.avatar--lg { width: 114px; height: 114px; border-radius: var(--ui-radius); flex-basis: 114px; font-size: var(--ui-fs-2xl); }
+.avatar--sm { width: 24px; height: 24px; flex-basis: 24px; font-size: 10px; }
+
+.badge-dev {
+  font-size: var(--ui-fs-xs); font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+  background: var(--ui-warning-tint); color: var(--ui-warning); padding: 3px 9px;
+  border-radius: var(--ui-radius-pill); border: 1px solid var(--ui-warning);
+}
+
+/* --- cmsLeft: collapsible navigation rail -------------------------------
+   The rail occupies 64px in the grid. Its inner panel is fixed-position so
+   that hovering can widen it over the centre column without reflowing it. */
+.cms-left { grid-area: left; }
+.cms-left__inner {
+  position: fixed; inset: 0 auto 0 0; z-index: 40;
+  width: var(--ui-rail-w);
+  display: flex; flex-direction: column;
+  padding: var(--ui-s-5) 0 var(--ui-s-4);
+  background: var(--ui-white); border-right: 1px solid var(--ui-edge);
+  overflow: hidden;
+  transition: width .16s var(--ui-ease), box-shadow .16s var(--ui-ease);
+}
+.cms-left:hover .cms-left__inner,
+.cms-left:focus-within .cms-left__inner {
+  width: var(--ui-rail-open-w);
+  box-shadow: var(--ui-shadow-lg);
+}
+.cms[data-nav="pinned"] .cms-left__inner { width: var(--ui-rail-open-w); box-shadow: none; }
+
+/* Fixed height: the mark and the wordmark are different sizes, and without
+   this the row would shrink by 2px on expand and drag the whole nav up. */
+.cms-left__logo {
+  display: flex; align-items: center; gap: var(--ui-s-3);
+  padding: 0 16px; height: 32px; margin-bottom: var(--ui-s-6);
+}
+.cms-left__mark { width: 32px; height: 32px; flex: 0 0 32px; }
+.cms-left__wordmark { height: 30px; width: auto; opacity: 0; transition: opacity .12s var(--ui-ease); }
+
+/* Tight on purpose. The rail carries fifteen rows and four separators, and a
+   13" screen plus the browser's own status popover leaves less room than that
+   wants — so each row gives up a few pixels rather than the list scrolling. */
+.cms-nav { display: grid; gap: 2px; padding: 0 12px; }
+.cms-nav__link, .cms-nav__pin, .cms-nav__appearance {
+  display: flex; align-items: center; gap: var(--ui-s-3);
+  padding: 6px 9px; border-radius: var(--ui-radius-sm);
+  font-family: inherit; font-size: var(--ui-fs-base); color: var(--ui-grey-700); font-weight: 500;
+  border: 0; background: none; cursor: pointer; text-align: left; width: 100%;
+  transition: background .13s var(--ui-ease), color .13s var(--ui-ease);
+}
+.cms-nav__icon { display: grid; place-items: center; width: 22px; flex: 0 0 22px; }
+.cms-nav__label { white-space: nowrap; opacity: 0; transition: opacity .12s var(--ui-ease); }
+.cms-nav__link:hover, .cms-nav__pin:hover, .cms-nav__appearance:hover { background: var(--ui-grey-100); color: var(--ui-ink); }
+.cms-nav__link.is-active { background: var(--ui-selected); color: var(--ui-selected-ink); }
+.cms-nav__link.is-active .icon { color: var(--ui-accent); }
+.cms-nav__kbd {
+  margin-left: auto; font-size: 11px; color: var(--ui-grey-300); opacity: 0;
+  border: 1px solid var(--ui-line); border-radius: 5px; padding: 1px 5px;
+  font-family: var(--ui-font-mono); transition: opacity .12s var(--ui-ease);
+}
+.cms-nav__sep { height: 1px; background: var(--ui-line); margin: var(--ui-s-2) 9px; }
+.cms-left__foot {
+  margin-top: auto; padding: var(--ui-s-2) 12px 0;
+  display: grid; gap: 2px; border-top: 1px solid var(--ui-line-soft);
+}
+.cms-nav__pin[aria-pressed="true"] { color: var(--ui-accent); }
+
+/* Appearance: the icon is whichever of the three it is set to. The root
+   carries the choice before anything is drawn, so the icon is right from the
+   first paint rather than once the scripts have run. */
+.appearance-icon { display: none; }
+:root:not([data-appearance-choice]) .appearance-icon--system,
+:root[data-appearance-choice="system"] .appearance-icon--system,
+:root[data-appearance-choice="light"] .appearance-icon--light,
+:root[data-appearance-choice="dark"] .appearance-icon--dark { display: grid; }
+
+/* A wordmark in dark letters vanishes on a dark ground, so each logo is in
+   the page twice and the appearance decides which one shows. */
+.cms-left__wordmark--for-dark, .auth__logo-img--for-dark { display: none; }
+:root[data-appearance="dark"] .cms-left__wordmark--for-light,
+:root[data-appearance="dark"] .auth__logo-img--for-light { display: none; }
+:root[data-appearance="dark"] .cms-left__wordmark--for-dark,
+:root[data-appearance="dark"] .auth__logo-img--for-dark { display: block; }
+
+/* Signed-in identity lives at the foot of the rail, not in a separate bar. */
+.cms-account { display: flex; align-items: center; gap: 2px; }
+.cms-account__user {
+  display: flex; align-items: center; gap: var(--ui-s-3);
+  padding: 7px 9px; border-radius: var(--ui-radius-sm); flex: 1 1 auto; min-width: 0;
+  color: var(--ui-grey-700); font-size: var(--ui-fs-base); font-weight: 500;
+}
+.cms-account__user:hover { background: var(--ui-grey-100); color: var(--ui-ink); }
+.cms-account__user .avatar { margin-left: -1px; }
+.cms-account__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* The log-out button would crowd a 64px rail, so it appears with the labels. */
+.cms-account__out { display: none; flex: 0 0 auto; }
+.cms-left:hover .cms-account__out,
+.cms-left:focus-within .cms-account__out,
+.cms[data-nav="pinned"] .cms-account__out { display: block; }
+
+.cms-nav__notice {
+  display: flex; align-items: center; gap: var(--ui-s-3);
+  padding: 7px 9px; border-radius: var(--ui-radius-sm);
+  background: var(--ui-warning-tint); color: var(--ui-warning);
+  font-size: var(--ui-fs-sm); font-weight: 600;
+}
+
+/* Labels fade in only once the rail is actually open. */
+.cms-left:hover .cms-nav__label,
+.cms-left:focus-within .cms-nav__label,
+.cms[data-nav="pinned"] .cms-nav__label,
+.cms-left:hover .cms-nav__kbd,
+.cms-left:focus-within .cms-nav__kbd,
+.cms[data-nav="pinned"] .cms-nav__kbd,
+.cms-left:hover .cms-left__wordmark,
+.cms-left:focus-within .cms-left__wordmark,
+.cms[data-nav="pinned"] .cms-left__wordmark { opacity: 1; transition-delay: .04s; }
+.cms-left:hover .cms-left__mark,
+.cms-left:focus-within .cms-left__mark,
+.cms[data-nav="pinned"] .cms-left__mark { display: none; }
+
+/* --- cmsCenter / cmsRight --- */
+/* The centre pane is a column: content scrolls, actions sit under it.
+   Keeping the action bar outside the scrollport means it can never cover
+   what is being edited. */
+.cms-center {
+  grid-area: center; display: flex; flex-direction: column;
+  min-height: 0; overflow: hidden; background: var(--ui-workspace);
+}
+.cms-center__scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: var(--ui-s-6) var(--ui-s-7) var(--ui-s-8); }
+.cms-actions {
+  flex: 0 0 auto; display: flex; align-items: center; gap: var(--ui-s-3);
+  justify-content: flex-end; flex-wrap: wrap; padding: var(--ui-s-4) var(--ui-s-7);
+  background: var(--ui-white); border-top: 1px solid var(--ui-edge);
+}
+.cms-actions__status { margin-right: auto; font-size: var(--ui-fs-sm); color: var(--ui-grey-500); }
+/* While something is scheduled the line says when, with the clock the pill
+   and the button carry. Ink rather than grey: it is the state of the page,
+   not a footnote, and it is the reason the buttons beside it read as they do. */
+.cms-actions__status--scheduled {
+  display: flex; align-items: center; gap: var(--ui-s-2); min-width: 0; color: var(--ui-ink);
+}
+.cms-actions__status--scheduled .icon { flex: 0 0 auto; color: var(--ui-accent-dark); }
+.cms-actions__status--scheduled .linkish { margin-left: 2px; }
+.cms-right {
+  grid-area: right; border-left: 1px solid var(--ui-edge); overflow-y: auto;
+  padding: var(--ui-s-6) var(--ui-s-6) var(--ui-s-9); background: var(--ui-white);
+}
+.cms-head { display: flex; align-items: center; gap: var(--ui-s-4); flex-wrap: wrap; margin-bottom: var(--ui-s-5); }
+.cms-head .grow { min-width: 200px; }
+.cms-head + .rule { margin-top: 0; }
+
+/* ============================================================== forms */
+
+/* align-content:start is load-bearing. A .field-row stretches every .field to
+   the tallest, and a stretched grid hands the extra height to its rows - so a
+   field with no hint under it grew a taller control, sitting lower, than the
+   field beside it that had one. */
+.field { display: grid; gap: 6px; align-content: start; }
+/* The label and its question mark share a line, so folding an explanation
+   away costs nothing in height. */
+.field__head { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.field__head > label { min-width: 0; }
+.field__head > .check { flex: 1 1 auto; }
+
+/* Deliberately quiet and deliberately a click. A panel that whispers as the
+   pointer crosses it is worse than one that says nothing until asked. */
+.hint-dot {
+  flex: 0 0 15px; width: 15px; height: 15px; margin-left: auto;
+  display: grid; place-items: center; padding: 0;
+  border: 0; border-radius: 50%;
+  background: var(--ui-grey-100); color: var(--ui-grey-500);
+  font-size: 10px; font-weight: 700; line-height: 1; font-family: inherit;
+  cursor: pointer; transition: background .12s var(--ui-ease), color .12s var(--ui-ease);
+}
+.hint-dot:hover { background: var(--ui-grey-200); color: var(--ui-ink); }
+.hint-dot.is-on { background: var(--ui-accent); color: var(--ui-on-colour); }
+.hint-dot:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 1px; }
+.field > label, .label {
+  font-size: var(--ui-fs-sm); font-weight: 600; color: var(--ui-grey-700);
+}
+.field__hint { font-size: var(--ui-fs-xs); color: var(--ui-grey-500); }
+.field__error { font-size: var(--ui-fs-xs); color: var(--ui-danger); }
+.field-row { display: flex; gap: var(--ui-s-3); flex-wrap: wrap; }
+.field-row > .field { flex: 1 1 160px; }
+
+/* One shared size for every control: same height, type, padding, radius. */
+input[type="text"], input[type="email"], input[type="tel"], input[type="url"],
+input[type="number"], input[type="search"], input[type="password"], input[type="date"],
+input[type="time"], select, textarea, .control {
+  width: 100%;
+  min-height: var(--ui-control-h);
+  padding: 9px var(--ui-control-px);
+  font-family: inherit;
+  font-size: var(--ui-control-fs);
+  line-height: 1.4;
+  color: var(--ui-ink);
+  background: var(--ui-control-bg);
+  border: var(--ui-control-border);
+  border-radius: var(--ui-control-radius);
+  transition: border-color .14s var(--ui-ease), box-shadow .14s var(--ui-ease);
+  appearance: none;
+}
+/* Chrome pads the inside of a date or time field a pixel top and bottom,
+   which drew those two 2px taller than every other control beside them. */
+input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+input[type="time"]::-webkit-datetime-edit-fields-wrapper { padding-block: 0; }
+textarea { min-height: 120px; resize: vertical; display: block; }
+/* A summary is two lines, not a body. The shared floor makes an excerpt the
+   tallest thing above the canvas, which is the wrong thing to be looking at. */
+textarea.textarea--short { min-height: 62px; }
+select {
+  padding-right: 36px; cursor: pointer;
+  background-image: var(--ui-select-arrow);
+  background-repeat: no-repeat; background-position: right 13px center; background-size: 12px 8px;
+}
+input:hover, select:hover, textarea:hover { border-color: var(--ui-grey-300); }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--ui-accent); box-shadow: var(--ui-ring); }
+input::placeholder, textarea::placeholder { color: var(--ui-grey-300); }
+input:disabled, select:disabled, textarea:disabled {
+  background: var(--ui-sunken); color: var(--ui-grey-500); cursor: not-allowed;
+}
+input.is-compact { max-width: 64px; text-align: center; padding-inline: 6px; }
+
+/* checkbox + radio */
+.check, .radio { display: flex; align-items: center; gap: var(--ui-s-2); font-size: var(--ui-fs-base); cursor: pointer; }
+/* Several checkboxes under one label - an article's subjects, a feed's. Two
+   columns where there is room, because a palette of nine in one column is a
+   scroll rather than a glance. */
+.check-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--ui-s-2) var(--ui-s-4);
+}
+.check-grid .check span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+input[type="checkbox"], input[type="radio"] {
+  appearance: none; width: 18px; height: 18px; min-height: 0; flex: 0 0 18px; padding: 0; margin: 0;
+  border: 1.5px solid var(--ui-grey-300); background: var(--ui-control-bg); cursor: pointer;
+  border-radius: 5px; transition: background .13s var(--ui-ease), border-color .13s var(--ui-ease);
+}
+input[type="radio"] { border-radius: var(--ui-radius-pill); }
+input[type="checkbox"]:checked, input[type="radio"]:checked { background: var(--ui-accent); border-color: var(--ui-accent); }
+input[type="checkbox"]:checked {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M3 7.4 5.8 10 11 4.2' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-size: 14px; background-position: center; background-repeat: no-repeat;
+}
+input[type="radio"]:checked { box-shadow: inset 0 0 0 3px var(--ui-control-bg); }
+input[type="checkbox"]:focus-visible, input[type="radio"]:focus-visible { box-shadow: var(--ui-ring); }
+
+/* ============================================================ buttons */
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--ui-s-2);
+  min-height: var(--ui-control-h); padding: 0 var(--ui-s-4); flex: 0 0 auto;
+  font-family: inherit; font-size: var(--ui-fs-base); font-weight: 600; line-height: 1;
+  border: 1px solid var(--ui-ink); border-radius: var(--ui-control-radius);
+  background: var(--ui-white); color: var(--ui-ink); cursor: pointer; white-space: nowrap;
+  transition: background .14s var(--ui-ease), border-color .14s var(--ui-ease),
+              color .14s var(--ui-ease), box-shadow .14s var(--ui-ease);
+}
+.btn:hover { background: var(--ui-grey-100); }
+/* Actions are black on white or white on black. The accent is reserved for
+   state, so a button never wears it - a blue edge always means "this is what
+   you are working on", never "press me". */
+.btn--primary, .btn--accent {
+  background: var(--ui-ink); border-color: var(--ui-ink); color: var(--ui-white);
+}
+.btn--primary:hover, .btn--accent:hover {
+  background: var(--ui-graphite); border-color: var(--ui-graphite);
+}
+.btn--danger { background: var(--ui-danger-fill); border-color: var(--ui-danger-fill); color: var(--ui-on-colour); }
+.btn--danger:hover { background: var(--ui-danger-dark); border-color: var(--ui-danger-dark); }
+.btn--warning { background: var(--ui-warning); border-color: var(--ui-warning); color: var(--ui-on-colour); }
+.btn--quiet { border-color: transparent; background: transparent; color: var(--ui-grey-700); }
+.btn--quiet:hover { background: var(--ui-grey-100); color: var(--ui-ink); }
+.btn--sm { min-height: 32px; font-size: var(--ui-fs-sm); padding: 0 var(--ui-s-3); }
+.btn--full { width: 100%; }
+.btn[disabled], .btn[aria-disabled="true"] { opacity: .4; pointer-events: none; }
+
+.icon-btn {
+  display: inline-grid; place-items: center; width: 32px; height: 32px; flex: 0 0 32px;
+  border: 0; background: transparent; color: var(--ui-grey-500);
+  border-radius: var(--ui-radius-sm); cursor: pointer; transition: background .13s var(--ui-ease), color .13s var(--ui-ease);
+}
+.icon-btn:hover { background: var(--ui-grey-100); color: var(--ui-ink); }
+.icon-btn--danger:hover { background: var(--ui-danger-tint); color: var(--ui-danger); }
+
+.linkish { color: var(--ui-accent); font-size: var(--ui-fs-sm); cursor: pointer; background: none; border: 0; padding: 0; font-family: inherit; }
+.linkish:hover { text-decoration: underline; }
+/* Red because it destroys, per the one rule the accent follows: blue marks
+   what you are working on, never what a control will do. */
+.linkish--danger { color: var(--ui-danger); }
+
+/* ============================================================= tables */
+
+.table { width: 100%; border-collapse: collapse; font-size: var(--ui-fs-base); }
+.table th {
+  text-align: left; font-size: var(--ui-fs-xs); font-weight: 600; color: var(--ui-grey-500);
+  text-transform: uppercase; letter-spacing: .05em;
+  padding: 0 var(--ui-s-3) var(--ui-s-2); border-bottom: 1px solid var(--ui-line);
+}
+.table td { padding: var(--ui-s-3); border-bottom: 1px solid var(--ui-line-soft); vertical-align: middle; }
+.table tbody tr { transition: background .12s var(--ui-ease); }
+.table tbody tr:hover { background: var(--ui-grey-100); }
+.table tbody tr.is-selected { background: var(--ui-accent-tint); }
+.table td.actions { text-align: right; white-space: nowrap; width: 1%; }
+.table td.actions .row { justify-content: flex-end; gap: 2px; }
+.table .col-narrow { width: 1%; white-space: nowrap; }
+.table a.cell-link { display: block; font-weight: 600; }
+/* The title column takes what the narrow ones leave and cuts its text short.
+   Without a width to give up it grew to fit the longest title, so a list in
+   a dashboard card was 683px in a 478px card and pushed its last column off
+   the edge. Invisible on white, and plain to see once the card was a colour
+   of its own. */
+.table td:has(> a.cell-link) { max-width: 0; }
+.table td:has(> a.cell-link) > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* The whole row is the link, so the whole row reacts: hovering anywhere on it
+   lights the title too, rather than leaving the row highlighted and the title
+   looking like the only live thing in it. */
+/* A sortable header is a link that has to keep looking like a header: the
+   label carries the type, and only the arrow says which way it is going. */
+.th-sort {
+  display: inline-flex; align-items: center; gap: 4px; color: inherit;
+  font: inherit; letter-spacing: inherit; text-transform: inherit;
+}
+.th-sort:hover { color: var(--ui-ink); }
+.th-sort.is-on { color: var(--ui-ink); }
+.th-sort__arrow { font-size: 8px; line-height: 1; }
+
+.table tbody tr:has(a.cell-link) { cursor: pointer; }
+.table a.cell-link:hover,
+.table tbody tr:hover a.cell-link { color: var(--ui-accent); }
+
+.pill {
+  display: inline-flex; align-items: center; gap: 5px; font-size: var(--ui-fs-xs); font-weight: 600;
+  padding: 3px 9px; border-radius: var(--ui-radius-pill); background: var(--ui-grey-100); color: var(--ui-grey-700);
+}
+.pill--live { background: var(--ui-success-tint); color: var(--ui-success); }
+.pill--draft { background: var(--ui-warning-tint); color: var(--ui-warning); }
+/* Live, with edits waiting. Reads as live-but-not-settled: the accent, which
+   marks state and never an action, is exactly right for it. */
+.pill--edited { background: var(--ui-accent-tint); color: var(--ui-accent); }
+/* Goes live by itself. The same family as edited - something is waiting -
+   told apart by the clock, and a shade darker because it is committed. */
+.pill--scheduled { background: var(--ui-accent-tint); color: var(--ui-accent-dark); white-space: nowrap; }
+.pill--scheduled .icon { flex: 0 0 auto; }
+/* "Saved 14:32", beside the status it belongs with. Green because it reports
+   that something went right, which is the one thing green should ever mean. */
+.pill--saved { background: var(--ui-success-tint); color: var(--ui-success); }
+.pill--saved:empty { display: none; }
+.pill--saved.is-busy { background: var(--ui-grey-100); color: var(--ui-grey-500); }
+.pill--saved.is-error { background: var(--ui-danger-tint); color: var(--ui-danger); }
+.pill--unused { background: var(--ui-grey-100); color: var(--ui-grey-500); }
+.pill--accent { background: var(--ui-accent-tint); color: var(--ui-accent-dark); }
+
+.empty {
+  padding: var(--ui-s-8) var(--ui-s-5); text-align: center; color: var(--ui-grey-500);
+  border: 1px dashed var(--ui-line); border-radius: var(--ui-radius); background: var(--ui-off-white);
+}
+
+/* ========================================================== dashboard */
+
+.dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--ui-s-5); }
+/* The page password, at the foot of the editor. One row, set off by rules
+   above and below: it is a property of the page rather than of anything on
+   the canvas, and it is reached rarely enough not to earn a place among the
+   settings opened on every visit. */
+.page-lock { flex-wrap: wrap; }
+.page-lock__input { max-width: 200px; }
+.page-lock__hint { min-width: 200px; }
+
+.panel { border: 1px solid var(--ui-line); border-radius: var(--ui-radius-lg); padding: var(--ui-s-5); background: var(--ui-white); }
+
+/* A fold's chevron points at what it does: right when shut, down when open.
+   Matched on the summary's own svg so every fold gets it without naming a
+   class - the icons are inlined at the point of use, not wrapped. The marker
+   is hidden here as well as by the inline `list-style:none`, because older
+   WebKit ignores that and draws its own triangle beside ours. */
+summary::-webkit-details-marker { display: none; }
+details > summary > svg { transition: transform .15s var(--ui-ease); }
+details[open] > summary > svg { transform: rotate(90deg); }
+.panel__head { display: flex; align-items: center; justify-content: space-between; gap: var(--ui-s-3); margin-bottom: var(--ui-s-4); }
+.panel__head h2 { font-size: var(--ui-fs-lg); }
+
+.stat-row { display: flex; align-items: baseline; gap: var(--ui-s-2); font-size: var(--ui-fs-lg); }
+.stat-row strong { font-size: var(--ui-fs-xl); font-weight: 700; }
+
+.metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: var(--ui-s-4); }
+.metric { border: 1px solid var(--ui-line); border-radius: var(--ui-radius); padding: var(--ui-s-4); }
+.metric__value { font-size: var(--ui-fs-2xl); font-weight: 700; letter-spacing: var(--ui-tracking-tight); }
+.metric__label { font-size: var(--ui-fs-xs); color: var(--ui-grey-500); }
+
+/* ====================================================== media library */
+
+.media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(172px, 1fr)); gap: var(--ui-s-4); }
+.media-item {
+  border: 1px solid var(--ui-line); border-radius: var(--ui-radius); padding: var(--ui-s-2);
+  background: var(--ui-white); cursor: pointer; position: relative;
+  transition: border-color .14s var(--ui-ease), box-shadow .14s var(--ui-ease);
+}
+.media-item:hover { border-color: var(--ui-grey-300); box-shadow: var(--ui-shadow-sm); }
+.media-item.is-selected { border-color: var(--ui-accent); box-shadow: var(--ui-ring); }
+.media-item__preview {
+  aspect-ratio: 3 / 2; border-radius: var(--ui-radius-sm); overflow: hidden; background: var(--ui-preview);
+  display: grid; place-items: center; color: var(--ui-grey-300); margin-bottom: var(--ui-s-2);
+}
+.media-item__preview img { width: 100%; height: 100%; object-fit: cover; }
+.media-item__name { font-size: var(--ui-fs-xs); font-weight: 600; }
+.media-item__meta { font-size: var(--ui-fs-xs); color: var(--ui-grey-500); }
+.media-item__saving { color: var(--ui-success); font-weight: 500; }
+
+/* --- conversion report in the Properties pane --- */
+.conversion-note {
+  background: var(--ui-success-tint); border-radius: var(--ui-radius-sm);
+  padding: var(--ui-s-2) var(--ui-s-3); display: grid; gap: 2px;
+}
+.conversion-note__saving { color: var(--ui-success); font-weight: 500; }
+
+/* --- inline notices --- */
+.notice {
+  border-radius: var(--ui-radius); padding: var(--ui-s-3) var(--ui-s-4);
+  font-size: var(--ui-fs-sm); line-height: var(--ui-lh-snug);
+  background: var(--ui-grey-100); color: var(--ui-grey-700);
+}
+.notice--warn { background: var(--ui-warning-tint); color: var(--ui-warning); }
+.notice code {
+  font-family: var(--ui-font-mono); font-size: .92em;
+  background: var(--ui-shade); border-radius: 4px; padding: 1px 5px;
+}
+.media-item__tools {
+  position: absolute; top: 8px; right: 8px; display: flex; gap: 2px;
+  opacity: 0; transition: opacity .13s var(--ui-ease);
+}
+.media-item:hover .media-item__tools, .media-item:focus-within .media-item__tools { opacity: 1; }
+.media-item__tools .icon-btn { background: var(--ui-float); box-shadow: var(--ui-shadow-sm); width: 28px; height: 28px; }
+
+.dropzone {
+  border: 2px dashed var(--ui-line); border-radius: var(--ui-radius-lg); padding: var(--ui-s-6);
+  text-align: center; color: var(--ui-grey-500); background: var(--ui-off-white);
+  transition: border-color .14s var(--ui-ease), background .14s var(--ui-ease);
+}
+.dropzone.is-over { border-color: var(--ui-accent); background: var(--ui-accent-tint); color: var(--ui-accent-dark); }
+
+.media-preview-frame {
+  border-radius: var(--ui-radius); overflow: hidden; background: var(--ui-preview);
+  display: grid; place-items: center; min-height: 150px; color: var(--ui-grey-300);
+}
+.media-preview-frame img { width: 100%; height: auto; }
+
+/* =================================================== editor / designer */
+
+.toolbar {
+  display: flex; align-items: center; gap: var(--ui-s-1); flex-wrap: wrap;
+  border: 1px solid var(--ui-line); border-radius: var(--ui-radius) var(--ui-radius) 0 0;
+  padding: 6px var(--ui-s-3); background: var(--ui-off-white);
+}
+/* Out of flow: appearing in flow would shove the canvas down the moment a
+   caret landed. Positioned against its own block by cms.js. */
+.toolbar[data-contextual] {
+  position: absolute; z-index: 80;
+  border-radius: var(--ui-radius); background: var(--ui-white);
+  box-shadow: var(--ui-shadow-lg);
+}
+/* The bar's offsetParent, so its coordinates are content offsets and it
+   scrolls with the block it belongs to instead of against it. */
+.cms-center__scroll { position: relative; }
+
+/* The panel's copy sits inside a field, so it drops the bar's own chrome. */
+.toolbar--panel {
+  border-radius: var(--ui-radius-sm); padding: 4px; background: var(--ui-grey-100);
+  border-color: transparent;
+}
+.toolbar__sep { width: 1px; height: 20px; background: var(--ui-line); margin-inline: 5px; }
+.toolbar .icon-btn { width: 30px; height: 30px; flex-basis: 30px; }
+.toolbar .icon-btn.is-active { background: var(--ui-selected); color: var(--ui-selected-ink); }
+.toolbar .icon-btn[disabled] { opacity: .35; pointer-events: none; }
+
+.richtext {
+  border: 1px solid var(--ui-line); border-top: 0; border-radius: 0 0 var(--ui-radius) var(--ui-radius);
+  padding: var(--ui-s-4) var(--ui-s-5); min-height: 260px; background: var(--ui-white);
+  font-size: var(--ui-fs-md); line-height: 1.65; overflow-y: auto;
+}
+.richtext:focus { outline: none; border-color: var(--ui-accent); box-shadow: var(--ui-ring); }
+.richtext:empty::before { content: attr(data-placeholder); color: var(--ui-grey-300); }
+.richtext p { margin: 0 0 .8em; }
+.richtext h2 { font-size: var(--ui-fs-xl); margin: 1.2em 0 .4em; }
+.richtext h3 { font-size: var(--ui-fs-lg); margin: 1.1em 0 .4em; }
+.richtext ul, .richtext ol { margin: 0 0 .8em; padding-left: 1.4em; }
+.richtext a { color: var(--ui-accent); text-decoration: underline; }
+.richtext blockquote {
+  border-left: 3px solid var(--ui-grey-300); margin: .9em 0; padding-left: var(--ui-s-4);
+  font-size: var(--ui-fs-lg); line-height: 1.35; color: var(--ui-ink);
+}
+
+/* --- block canvas --- */
+/* Generous gap so neighbouring hover outlines never visually collide. */
+/* align-content:start is load-bearing: the canvas has a minimum height, and
+   without it a single slice stretches to fill that height. The slice then
+   looks like a large drop target while only the part its columns actually
+   cover accepts anything - which reads as the editor lying about where a
+   block will land. */
+/* No frame of its own. The slices are cards, the empty state draws its own
+   dashed box, and the scroll pane already bounds the area - an outer border
+   only added a line to look past. Blocks line up with the fields above it. */
+/* The trailing padding is a drop target. Without it the last slice ends flush
+   with the canvas and there is nowhere to hover to add one *after* it - the
+   insertion index is worked out from the pointer's Y, so the pointer needs
+   somewhere below the last block to be. */
+.canvas {
+  display: grid; gap: var(--ui-s-6); min-height: 140px; align-content: start;
+  padding-bottom: var(--ui-s-7);
+}
+/* In dark mode the canvas is a light sheet in a dark room. It shows the page
+   the way the site will draw it, and the site has not gone dark: cms-tokens.css
+   hands it the light set back, and this gives it the ground and the ink that
+   light mode gets from the body. The sheet reaches out sideways rather than
+   pushing its content in, so the blocks still line up with the fields above,
+   and the room round them keeps a hover outline or a name tag on the sheet. */
+:root[data-appearance="dark"] .canvas {
+  color: var(--ui-ink); background: var(--ui-white); border-radius: var(--ui-radius);
+  margin: var(--ui-s-4) calc(-1 * var(--ui-s-4)) 0;
+  padding: var(--ui-s-5) var(--ui-s-4) var(--ui-s-7);
+}
+/* The theme screen's type sample is the site's too. */
+:root[data-appearance="dark"] .theme-preview__type { color: var(--ui-ink); }
+.canvas__hint {
+  border: 2px dashed var(--ui-line); border-radius: var(--ui-radius); padding: var(--ui-s-7);
+  text-align: center; color: var(--ui-grey-500); font-size: var(--ui-fs-base);
+}
+.canvas.is-over > .canvas__hint { border-color: var(--ui-accent); }
+
+/* --- chrome-light nesting --------------------------------------------
+   Objects, columns and slices carry no border or header at rest. The one
+   level under the pointer gets a hairline outline, a small name tag and a
+   floating tool row; everything else stays out of the way. */
+
+.obj, .obj__col, .slice-block {
+  position: relative;
+  border-radius: var(--ui-radius-sm);
+  outline: 1px dashed transparent;
+  outline-offset: 3px;
+  transition: outline-color .12s var(--ui-ease), background .12s var(--ui-ease);
+}
+.obj { display: grid; gap: var(--ui-s-2); }
+.obj.is-dragging { opacity: .4; }
+
+/* One indicator, not three. The hairline is enough to say both "under the
+   pointer" and "selected" - a solid border and a tinted background on top of
+   it only competed with the content for attention, which is the opposite of
+   what an editing surface wants. */
+.obj.is-hover, .obj__col.is-hover, .slice-block.is-hover,
+.obj.is-selected, .obj__col.is-selected, .slice-block.is-selected {
+  outline-color: var(--ui-accent);
+}
+
+/* Name tag: sits on the outline's top-left, like a label on a folder. */
+.chrome-tag {
+  position: absolute; top: -11px; left: 6px; z-index: 3;
+  display: none; align-items: center; height: 18px; padding: 0 7px;
+  font-size: 11px; font-weight: 600; line-height: 1; letter-spacing: .01em;
+  color: var(--ui-accent-dark); background: var(--ui-accent-tint);
+  border-radius: 5px; white-space: nowrap; pointer-events: none;
+}
+.chrome-tag--slice { color: var(--ui-slice); background: var(--ui-slice-tint); }
+.is-hover > .chrome-tag, .is-selected > .chrome-tag { display: flex; }
+
+/* Tool row: drag, step out, delete. Same reveal rule as the tag. */
+.chrome-tools {
+  position: absolute; top: -13px; right: 6px; z-index: 4;
+  display: none; align-items: center; gap: 1px; padding: 2px;
+  background: var(--ui-white); border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius-sm); box-shadow: var(--ui-shadow-sm);
+}
+.is-hover > .chrome-tools, .is-selected > .chrome-tools { display: flex; }
+.chrome-tools__btn {
+  display: grid; place-items: center; width: 22px; height: 22px;
+  border: 0; background: none; color: var(--ui-grey-500);
+  border-radius: 4px; cursor: pointer; padding: 0;
+}
+.chrome-tools__btn:first-child { cursor: grab; }
+.chrome-tools__btn:first-child:active { cursor: grabbing; }
+.chrome-tools__btn:hover { background: var(--ui-grey-100); color: var(--ui-ink); }
+.chrome-tools__btn--danger:hover { background: var(--ui-danger-tint); color: var(--ui-danger); }
+
+.obj__body { display: grid; gap: var(--ui-s-2); }
+.obj__cols { display: grid; gap: var(--ui-s-5); }
+.obj__cols--2 { grid-template-columns: 1fr 1fr; }
+.obj__cols--3 { grid-template-columns: repeat(3, 1fr); }
+/* Padding is invisible at rest but gives the container a band to hover,
+   which is how you reach an outer level without the step-out button. */
+.obj__col { display: grid; gap: var(--ui-s-2); align-content: start; min-height: 56px; padding: var(--ui-s-2); }
+.obj__col.is-over { outline: 1px dashed var(--ui-accent); }
+.obj__col-empty {
+  font-size: var(--ui-fs-xs); color: var(--ui-grey-300); text-align: center;
+  padding: var(--ui-s-4) 0; border: 1px dashed var(--ui-line-soft); border-radius: var(--ui-radius-sm);
+}
+
+.slice-block { padding: var(--ui-s-3); }
+/* The body is the band. blocks.css already gives it its background and its
+   inner box; all that is needed here is that it not fight them. */
+.slice-block__body { display: block; }
+
+/* A coloured band fills exactly the box the selection outline draws.
+   
+   It used to be pulled out past the canvas to mime the edge-to-edge band a
+   Blank page really renders — but the canvas is not the width of a window and
+   never will be, so the mime bought nothing and cost coherence: the fill ran
+   wider than the outline, and the content sat between the two. Three
+   boundaries, three answers. Whether bands reach the window edge is what the
+   page type field says; the canvas's job is to show what is in the slice. */
+.slice-block:has(> [class*="b-surface--"]) { padding: 0; }
+.slice-block__body[class*="b-surface--"] { border-radius: var(--ui-radius-sm); }
+
+/* A hidden slice: still on the canvas and still edited, but not on the site.
+   Dimmed by a veil rather than by opacity, which would fade the tool rows of
+   everything inside it too and make it look locked: the veil sits over the
+   content and under every piece of chrome, so editing inside a hidden slice
+   works and looks exactly as it does anywhere else. Its tag never goes away,
+   where the name tag only comes up under the pointer - a slice quietly
+   missing from the site is what a hidden one must not turn into. */
+.slice-block.is-hidden::after {
+  content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  border-radius: inherit;
+  background: repeating-linear-gradient(135deg, transparent 0 9px, var(--ui-shade) 9px 11px),
+    var(--ui-veil);
+}
+.slice-hidden-tag {
+  position: absolute; top: -11px; left: 50%; z-index: 3; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 4px; height: 18px; padding: 0 8px 0 6px;
+  font-size: 11px; font-weight: 600; line-height: 1; letter-spacing: .01em;
+  color: var(--ui-slice); background: var(--ui-slice-tint);
+  border-radius: 5px; white-space: nowrap; pointer-events: none;
+}
+
+
+/* --- object library --- */
+.lib { display: grid; gap: 6px; }
+.lib__item {
+  display: flex; align-items: center; gap: var(--ui-s-3); padding: 9px var(--ui-s-3);
+  border: 1px solid var(--ui-line); border-radius: var(--ui-radius-sm); background: var(--ui-white);
+  cursor: grab; font-size: var(--ui-fs-sm); font-weight: 500; user-select: none;
+  transition: border-color .13s var(--ui-ease), background .13s var(--ui-ease), transform .1s var(--ui-ease);
+}
+.lib__item:hover { border-color: var(--ui-accent); background: var(--ui-accent-tint); }
+/* Clicked, and waiting for Enter. Same colour as hover on purpose: the accent
+   means "this is what you are working on", and here they are the same thing —
+   so the ring is what says the selection outlives the pointer. */
+.lib__item.is-selected {
+  border-color: var(--ui-accent); background: var(--ui-accent-tint);
+  box-shadow: var(--ui-ring);
+}
+.lib__item.is-selected .icon { color: var(--ui-accent); }
+.lib__item:focus-visible { outline: none; border-color: var(--ui-accent); box-shadow: var(--ui-ring); }
+
+/* Slice is a level up from what follows it, and the rule says so. */
+.lib__sep { height: 1px; background: var(--ui-line); margin: var(--ui-s-2) 2px; }
+.lib__item--slice { font-weight: 600; }
+
+.kbd {
+  display: inline-block; padding: 0 4px; min-width: 16px; text-align: center;
+  border: 1px solid var(--ui-line); border-radius: 4px;
+  font-family: var(--ui-font-mono); font-size: 10px; line-height: 15px;
+  color: var(--ui-grey-500); background: var(--ui-white);
+}
+.lib__item:active { cursor: grabbing; transform: scale(.99); }
+.lib__item .icon { color: var(--ui-grey-500); }
+.lib__item:hover .icon { color: var(--ui-accent); }
+
+/* --- spacing control (margin / padding) --- */
+.spacing { display: grid; gap: var(--ui-s-3); }
+.spacing__group { display: grid; grid-template-columns: auto repeat(4, 1fr); gap: 6px; align-items: center; }
+.spacing__group > .label { font-size: var(--ui-fs-sm); }
+.spacing__group input { min-height: 34px; padding: 4px; text-align: center; font-size: var(--ui-fs-sm); }
+.spacing__legend { display: grid; grid-template-columns: auto repeat(4, 1fr); gap: 6px; }
+.spacing__legend span { font-size: 10px; color: var(--ui-grey-300); text-align: center; text-transform: uppercase; letter-spacing: .06em; }
+
+/* ============================================================== menus */
+
+.menu-card { border: 1px solid var(--ui-line); border-radius: var(--ui-radius-lg); background: var(--ui-off-white); padding: var(--ui-s-4); }
+.menu-items { display: grid; gap: 6px; margin: var(--ui-s-3) 0; }
+.menu-item {
+  display: flex; align-items: center; gap: var(--ui-s-2); background: var(--ui-white);
+  border: 1px solid var(--ui-line); border-radius: var(--ui-radius-sm); padding: 5px var(--ui-s-2);
+}
+.menu-item.is-dragging { opacity: .4; }
+.menu-item.is-drop-before { box-shadow: 0 -2px 0 0 var(--ui-accent); }
+.menu-item.is-drop-after { box-shadow: 0 2px 0 0 var(--ui-accent); }
+.menu-item__handle { cursor: grab; color: var(--ui-grey-300); display: grid; place-items: center; padding: 4px; }
+.menu-item__handle:active { cursor: grabbing; }
+.menu-item input[type="text"], .menu-item select { min-height: 34px; font-size: var(--ui-fs-sm); }
+.menu-item > .grow { min-width: 0; }
+.menu-item__target { flex: 0 1 190px; min-width: 0; }
+.menu-item[data-depth="1"] { margin-left: 28px; }
+.menu-item[data-depth="2"] { margin-left: 56px; }
+
+.page-drag {
+  display: flex; align-items: center; gap: var(--ui-s-2); padding: 7px var(--ui-s-3);
+  border: 1px solid var(--ui-line); border-radius: var(--ui-radius-sm); background: var(--ui-white);
+  font-size: var(--ui-fs-sm); cursor: grab; user-select: none; overflow: hidden;
+}
+.page-drag:hover { border-color: var(--ui-accent); background: var(--ui-accent-tint); }
+.page-drag > .grow { min-width: 0; }
+.page-drag__path { color: var(--ui-grey-500); font-size: var(--ui-fs-xs); flex: 0 1 auto; min-width: 0; max-width: 45%; }
+
+/* ============================================================ dialogs */
+
+.overlay {
+  position: fixed; inset: 0; background: var(--ui-backdrop);
+  display: grid; place-items: center; padding: var(--ui-s-5); z-index: 100;
+  animation: fade .14s var(--ui-ease);
+}
+@keyframes fade { from { opacity: 0; } }
+.dialog {
+  background: var(--ui-white); border-radius: var(--ui-radius-lg); box-shadow: var(--ui-shadow-dialog);
+  width: min(336px, 100%); padding: var(--ui-s-5); animation: pop .16s var(--ui-ease);
+}
+@keyframes pop { from { transform: translateY(8px) scale(.98); opacity: 0; } }
+.dialog--wide { width: min(960px, 100%); }
+.dialog--form { width: min(560px, 100%); }
+.dialog h2 { font-size: var(--ui-fs-xl); margin-bottom: var(--ui-s-1); }
+.dialog__note { font-size: var(--ui-fs-xs); font-style: italic; color: var(--ui-grey-500); margin-bottom: var(--ui-s-4); }
+.dialog__subject {
+  display: flex; align-items: center; gap: var(--ui-s-3); padding: var(--ui-s-3);
+  border: 1px solid var(--ui-line); border-radius: var(--ui-radius); margin-bottom: var(--ui-s-4);
+}
+.dialog__subject-thumb {
+  width: 48px; height: 48px; flex: 0 0 48px; border-radius: var(--ui-radius-sm); overflow: hidden;
+  background: var(--ui-preview); display: grid; place-items: center; color: var(--ui-grey-300);
+}
+.dialog__subject-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.dialog__warning {
+  background: var(--ui-warning-tint); border-radius: var(--ui-radius); padding: var(--ui-s-3);
+  margin-bottom: var(--ui-s-4); display: grid; gap: var(--ui-s-2); font-size: var(--ui-fs-sm);
+}
+.dialog__actions { display: flex; gap: var(--ui-s-3); }
+/* A dialogue that ends in a field had its buttons flush against it. The note,
+   the subject chip and the warning each carry their own bottom margin and a
+   plain field does not, so only the two dialogues that ask a question -
+   Apply a template, Save page as template - were affected. */
+.dialog .field + .dialog__actions { margin-top: var(--ui-s-4); }
+/* The schedule dialogue: a pair of fields, then a line that is empty until
+   the time is refused. */
+.dialog .field-row + .sched-error { margin-top: var(--ui-s-2); }
+.dialog .field-row ~ .dialog__actions { margin-top: var(--ui-s-4); }
+.dialog__body { max-height: min(70vh, 640px); overflow-y: auto; }
+
+/* ============================================================== toast */
+
+.toasts { position: fixed; right: var(--ui-s-5); bottom: var(--ui-s-5); display: grid; gap: var(--ui-s-2); z-index: 200; }
+.toast {
+  background: var(--ui-toast); color: var(--ui-toast-ink); padding: var(--ui-s-3) var(--ui-s-4);
+  border-radius: var(--ui-radius); font-size: var(--ui-fs-sm); box-shadow: var(--ui-shadow-lg);
+  display: flex; align-items: center; gap: var(--ui-s-2); animation: slide .18s var(--ui-ease);
+}
+@keyframes slide { from { transform: translateY(8px); opacity: 0; } }
+.toast--error { background: var(--ui-danger-fill); color: var(--ui-on-colour); }
+.toast--ok .icon { color: var(--ui-success); }
+
+/* =============================================================== auth */
+
+body.auth {
+  min-height: 100vh; display: grid; place-items: center; background: var(--ui-paper); padding: var(--ui-s-5);
+}
+.auth__logo { position: fixed; top: 30px; left: 30px; }
+.auth__logo img { height: 46px; width: auto; }
+.auth__dialog {
+  width: min(400px, 100%); background: var(--ui-white); border-radius: var(--ui-radius-lg);
+  box-shadow: var(--ui-shadow-lg); padding: var(--ui-s-7) var(--ui-s-6);
+}
+.auth__dialog h1 { font-size: var(--ui-fs-xl); margin-bottom: var(--ui-s-6); }
+.auth__dialog .field { margin-bottom: var(--ui-s-5); }
+.auth__dialog .btn { min-width: 120px; }
+.auth__label { font-size: var(--ui-fs-base); color: var(--ui-grey-700); margin: 0 0 var(--ui-s-3); }
+.auth__error {
+  font-size: var(--ui-fs-sm); color: var(--ui-danger); background: var(--ui-danger-tint);
+  padding: 9px var(--ui-s-3); border-radius: var(--ui-radius-sm); margin: 0 0 var(--ui-s-4);
+}
+.auth__notice {
+  font-size: var(--ui-fs-sm); color: var(--ui-grey-700); background: var(--ui-grey-100);
+  padding: 9px var(--ui-s-3); border-radius: var(--ui-radius-sm); margin: 0 0 var(--ui-s-4);
+}
+.auth__foot { font-size: var(--ui-fs-xs); color: var(--ui-grey-500); margin: var(--ui-s-6) 0 0; }
+.auth__foot a { color: var(--ui-accent); }
+
+.otp { display: flex; gap: var(--ui-s-2); margin-bottom: var(--ui-s-5); }
+.otp__box {
+  width: 44px; height: 44px; min-height: 44px; flex: 1 1 44px; max-width: 56px;
+  text-align: center; font-size: var(--ui-fs-lg); font-weight: 600; padding: 0;
+  border-radius: var(--ui-radius); font-variant-numeric: tabular-nums;
+}
+
+/* ========================================================= responsive */
+
+@media (max-width: 1280px) {
+  .cms, .cms--wide { grid-template-columns: 240px minmax(0, 1fr) 280px; }
+}
+@media (max-width: 1080px) {
+  .cms, .cms--wide, .cms--nopanel {
+    grid-template-columns: 1fr; grid-template-rows: auto auto auto;
+    grid-template-areas: "left" "center" "right";
+    height: auto; overflow: visible;
+  }
+  /* Below this width the rail becomes a horizontal strip: the inner panel
+     stops floating and the whole thing sits in normal flow again. */
+  .cms-left { grid-area: left; }
+  .cms-left__inner,
+  .cms-left:hover .cms-left__inner,
+  .cms[data-nav="pinned"] .cms-left__inner {
+    position: static; width: auto; flex-direction: row; flex-wrap: wrap;
+    align-items: center; gap: var(--ui-s-3); box-shadow: none;
+    padding: var(--ui-s-3) var(--ui-s-4); border-right: 0; border-bottom: 1px solid var(--ui-edge);
+  }
+  .cms-left__logo { padding: 0; margin-bottom: 0; }
+  .cms-left__mark, .cms[data-nav="pinned"] .cms-left__mark { display: block; }
+  .cms-left__wordmark, :root[data-appearance="dark"] .cms-left__wordmark { display: none; }
+  .cms-nav { grid-auto-flow: column; grid-auto-columns: max-content; overflow-x: auto; padding: 0; gap: 4px; }
+  .cms-nav__label, .cms[data-nav="pinned"] .cms-nav__label { display: none; }
+  .cms-nav__sep, .cms-nav__kbd { display: none; }
+  /* On a strip the account sits inline at the end, labels hidden. */
+  .cms-left__foot {
+    margin: 0 0 0 auto; padding: 0; border-top: 0;
+    display: flex; align-items: center; gap: var(--ui-s-2);
+  }
+  .cms-nav__pin, .cms-nav__notice .cms-nav__label { display: none; }
+  .cms-account__out, .cms[data-nav="pinned"] .cms-account__out { display: block; }
+  .cms-account__user { padding: 4px; }
+  .cms-center { overflow: visible; display: block; }
+  .cms-center__scroll { overflow: visible; padding: var(--ui-s-5) var(--ui-s-4); }
+  .cms-actions { padding: var(--ui-s-4); }
+  .cms-right { padding: var(--ui-s-5) var(--ui-s-4); overflow: visible; }
+  .cms-right { border-left: 0; border-top: 1px solid var(--ui-edge); }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+
+/* ==================================================== panel tabs (editor) */
+
+.panel-tabs { display: flex; flex-direction: column; min-height: 0; }
+.panel-tabs__bar {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px;
+  background: var(--ui-sunken); border-radius: var(--ui-radius); padding: 3px;
+  margin-bottom: var(--ui-s-5); position: sticky; top: 0; z-index: 5;
+}
+.panel-tabs__tab {
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+  padding: 7px 4px; border: 0; border-radius: var(--ui-radius-sm);
+  background: transparent; color: var(--ui-grey-500); cursor: pointer;
+  font-family: inherit; font-size: var(--ui-fs-xs); font-weight: 600;
+  transition: background .13s var(--ui-ease), color .13s var(--ui-ease);
+}
+.panel-tabs__tab .icon { width: 15px; height: 15px; }
+.panel-tabs__tab:hover { color: var(--ui-ink); }
+.panel-tabs__tab.is-active { background: var(--ui-white); color: var(--ui-ink); box-shadow: var(--ui-shadow-sm); }
+.panel-tabs__pane { display: block; }
+
+.lib__item--saved { padding-right: 4px; }
+.lib__item--saved .icon-btn { width: 26px; height: 26px; flex-basis: 26px; opacity: 0; }
+.lib__item--saved:hover .icon-btn, .lib__item--saved:focus-within .icon-btn { opacity: 1; }
+
+/* ------------------------------------------- canvas content affordances */
+
+/* The canvas renders content with blocks.css, so the only extra styling here
+   is what makes it editable: focus rings, empty-state prompts, and stand-ins
+   for the things that cannot really run inside the editor. */
+
+.canvas .is-editable {
+  outline: none;
+  border-radius: 4px;
+  cursor: text;
+  min-width: 24px;
+  transition: box-shadow .12s var(--ui-ease), background .12s var(--ui-ease);
+}
+/* Typing needs no ring of its own. The object's hairline already says which
+   block is in play and the caret says where the words go; a filled box on top
+   of that was the loudest thing on the canvas. */
+.canvas .is-editable:hover { box-shadow: 0 0 0 2px var(--ui-grey-100); }
+/* Clearing the background while typing keeps a text block from carrying a
+   highlight of its own - but a button paints its own background and takes its
+   text colour *from* it, so clearing that left white text on white. Buttons
+   keep theirs; everything else still goes flat while it is being edited. */
+.canvas .is-editable:focus { box-shadow: none; }
+.canvas .is-editable:focus:not(.b-button__el) { background: none; }
+
+/* On the canvas a button is something you edit, not something you press, so
+   it holds its resting appearance under the pointer. Each variant is named
+   because each rests differently; inheriting would flatten them to one. */
+.canvas .b-button__el:hover { background: transparent; color: var(--ink); border-color: var(--ink); }
+.canvas .b-button__el--ghost:hover { background: var(--white); border-color: var(--line); color: var(--grey-700); }
+.canvas .is-editable:empty::before {
+  content: attr(data-placeholder);
+  color: var(--ui-grey-300);
+  pointer-events: none;
+}
+.canvas .b-text.is-editable { min-height: 1.6em; }
+
+/* Image: the frame is an ordinary box, so clicking it selects the block like
+   any other object. The centred control is the only thing that opens the
+   library, and it sits in the same place whether or not there is an image, so
+   both states read alike.
+   Only an empty frame is tinted. A filled one used to be too, long after the
+   site stopped tinting what holds a picture - so a transparent logo sat in a
+   grey rounded box here and on nothing at all on the site, and its corners
+   looked like a choice the page had made. */
+.canvas .editor-image--empty { background: var(--ui-grey-100); cursor: pointer; }
+
+.editor-image-empty {
+  min-height: 168px;
+  border: 1px dashed var(--ui-line); border-radius: var(--ui-radius-lg);
+  transition: border-color .12s var(--ui-ease);
+}
+.canvas .editor-image--empty:hover .editor-image-empty { border-color: var(--ui-accent); }
+
+.canvas .editor-image__pick {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: 40px; height: 40px; padding: 0; display: grid; place-items: center;
+  border: 0; border-radius: var(--ui-radius-pill); cursor: pointer;
+  background: var(--ui-float); color: var(--ui-ink);
+  box-shadow: var(--ui-shadow-sm);
+  transition: background .12s var(--ui-ease), transform .12s var(--ui-ease);
+}
+.canvas .editor-image__pick:hover {
+  background: var(--ui-white); transform: translate(-50%, -50%) scale(1.08);
+}
+.canvas .editor-image__pick:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 2px; }
+/* The toolbar's own glyph, drawn smaller than its natural 26px. */
+.canvas .editor-image__pick svg { width: 20px; height: 20px; }
+
+/* Two narrow fields sharing a row, for pairs that read as one setting. */
+.field-pair { display: grid; grid-template-columns: 1fr 1fr; gap: var(--ui-s-3); }
+.field-pair .field { margin: 0; }
+
+/* A cell holds objects, so it is a drop target like a column. */
+.canvas .table-cell { min-width: 96px; }
+.canvas .table-cell.is-over { outline: 1px dashed var(--ui-accent); outline-offset: -2px; }
+.table-cell__empty {
+  color: var(--ui-grey-300); font-size: var(--ui-fs-sm); cursor: text;
+  padding: 2px 0; user-select: none;
+}
+.canvas .table-cell:hover .table-cell__empty { color: var(--ui-accent); }
+/* Without a border setting there is nothing to aim at while editing. */
+.canvas .b-table--none th, .canvas .b-table--none td { outline: 1px dashed var(--ui-line); outline-offset: -1px; }
+/* Objects sit tighter inside a cell than they would in a column. */
+.canvas .table-cell .obj { margin: 0; }
+
+/* A flat canvas: the slice around the objects is plumbing, so it draws as
+   nothing at all. No outline, no tag, no toolbar - just the list. */
+.canvas--flat .slice-block--flat {
+  border: 0; padding: 0; margin: 0; background: none;
+}
+.canvas--flat .slice-block--flat > .slice-col { gap: var(--ui-s-3); }
+.canvas--flat .slice-block--flat.is-hover,
+.canvas--flat .slice-block--flat.is-selected { outline: 0; box-shadow: none; }
+
+/* A form placed on a page: which form, not what is in it. Read-only on the
+   canvas, because a form is written on its own screen - so it reads as a
+   reference rather than as something to click into and start typing. */
+.editor-formref {
+  position: relative;
+  border: 1px dashed var(--ui-line);
+  border-radius: var(--ui-radius);
+  padding: var(--ui-s-5) var(--ui-s-4) var(--ui-s-4);
+  background: var(--ui-off-white);
+}
+.editor-formref--empty { border-color: var(--ui-warning); }
+
+/* Spacer shows its own height while editing. */
+/* An embed is drawn as a card, never as the real iframe: a third-party frame
+   would take clicks meant for the editor and make opening a page depend on
+   someone else's server. The card says which provider and where it points. */
+.editor-embed {
+  display: flex; align-items: center; gap: var(--ui-s-3);
+  padding: var(--ui-s-4); border: 1px dashed var(--ui-line);
+  border-radius: var(--ui-radius); background: var(--ui-off-white);
+}
+.editor-embed__mark {
+  display: grid; place-items: center; width: 40px; height: 40px; flex: 0 0 40px;
+  border-radius: var(--ui-radius-sm); background: var(--ui-grey-100); color: var(--ui-grey-500);
+}
+
+/* The code block is edited in place, so the pre has to accept a caret without
+   the shared stylesheet's `white-space: pre` swallowing the placeholder. */
+.canvas .b-code__edit { display: block; min-height: 1.5em; white-space: pre-wrap; outline: none; }
+
+.editor-spacer {
+  display: grid; place-items: center;
+  background: repeating-linear-gradient(45deg, var(--ui-grey-100) 0 6px, transparent 6px 12px);
+  border-radius: var(--ui-radius-sm);
+}
+.editor-spacer span { font-size: 10px; color: var(--ui-grey-500); }
+
+/* A field's controls are a picture of the field, not the field.
+   A disabled control fires no mouse events at all and swallows the ones aimed
+   at it, so clicking a field's input - most of the field's own area - selected
+   nothing, and only the label worked. Nothing here is meant to be typed in, so
+   the pointer passes through to the object that owns it. */
+.canvas .b-field input:disabled,
+.canvas .b-field textarea:disabled,
+.canvas .b-field select:disabled {
+  background: var(--ui-white); color: var(--ui-grey-500); cursor: default; opacity: 1;
+  pointer-events: none;
+}
+.canvas .editor-field-label { display: inline-block; }
+.editor-form-slot { min-height: 64px; }
+
+/* Article feed stand-in: shape without pretending to hold real articles. */
+.editor-feed { display: grid; gap: var(--ui-s-2); }
+.editor-feed__cards { display: flex; gap: var(--ui-s-3); }
+.editor-feed__card {
+  flex: 1; height: 76px; border-radius: var(--ui-radius);
+  background: var(--ui-grey-100); border: 1px solid var(--ui-line-soft);
+}
+.editor-feed__meta { font-size: var(--ui-fs-xs); color: var(--ui-grey-500); }
+/* The subject chips, as shape only - the canvas has no request to read the
+   real subjects from, and three grey pills say "a filter goes here" as well
+   as the names would. */
+.editor-feed__chips { display: flex; gap: var(--ui-s-2); }
+.editor-feed__chips span {
+  width: 54px; height: 20px; border-radius: var(--ui-radius-pill);
+  background: var(--ui-grey-100); border: 1px solid var(--ui-line-soft);
+}
+
+/* Slice and column wrappers must not inherit the site's outer spacing. */
+/* Editor canvas: slices show their column boundaries so an empty one is
+   still a visible drop target. */
+/* The tail padding is a real drop target: without it the only way to add to
+   the end of a full slice is to drop on top of the last object, which lands
+   correctly but feels like a mistake. */
+.canvas .slice-col {
+  position: relative; min-height: 60px; border-radius: var(--ui-radius-sm);
+  padding-bottom: 26px;
+}
+.canvas .b-slice--cols-2 > .slice-col,
+.canvas .b-slice--cols-3 > .slice-col,
+.canvas .b-slice--cols-4 > .slice-col { outline: 1px dashed var(--ui-line); outline-offset: 3px; }
+.canvas .slice-col.is-hover,
+.canvas .slice-col.is-selected { outline: 1px dashed var(--ui-accent); outline-offset: 3px; }
+.canvas .slice-col.is-over { outline: 1px dashed var(--ui-accent); }
+/* The canvas wraps each object in an .obj, so the wrapper is what a centred
+   or right-aligned column places. Same rule blocks.css gives the objects on
+   the site: the full-width kinds keep the column's width - an empty image
+   used to shrink to a sliver - and a capped image goes by its margins. */
+.canvas .slice-col > .obj[data-kind="image"],
+.canvas .slice-col > .obj[data-kind="divider"],
+.canvas .slice-col > .obj[data-kind="spacer"],
+.canvas .slice-col > .obj[data-kind="embed"],
+.canvas .slice-col > .obj[data-kind="table"],
+.canvas .slice-col > .obj[data-kind="code"],
+.canvas .slice-col > .obj[data-kind="form"],
+.canvas .slice-col > .obj[data-kind="articles"] { justify-self: stretch; }
+.canvas .slice-col.b-align-center > .obj > .b-image { margin-inline: auto; }
+.canvas .slice-col.b-align-right  > .obj > .b-image { margin-inline: auto 0; }
+.chrome-tag--col {
+  position: absolute; top: -9px; left: 6px; z-index: 2;
+  font-size: 10px; letter-spacing: .04em; text-transform: uppercase;
+  background: var(--ui-grey-100); color: var(--ui-grey-500); padding: 1px 6px; border-radius: 999px;
+}
+
+/* The blue line showing where a drop will land. */
+/* Nothing fills while dragging. The line says where the object lands and the
+   container's hairline says which one it lands in; a wash of colour on top of
+   both only obscured the content being aimed at. The media library's file
+   dropzone keeps its fill - there is no insertion line there, so the fill is
+   the whole affordance. */
+
+/* The insertion line. A box-shadow followed the element's rounded corners and
+   curled up at the ends, which read as a glow rather than a position. This is
+   a bar of its own: square, thick, and a blue that belongs to nothing else on
+   the screen, so it cannot be mistaken for a selection or hover outline. */
+.canvas .obj, .canvas [data-block] { position: relative; }
+.canvas .obj.is-drop-before::after,
+.canvas .obj.is-drop-after::after,
+.canvas [data-block].is-drop-before::after,
+.canvas [data-block].is-drop-after::after {
+  content: ''; position: absolute; left: 0; right: 0; height: 4px;
+  background: var(--ui-drop-line); border-radius: 0; z-index: 6; pointer-events: none;
+}
+.canvas .obj.is-drop-before::after,
+.canvas [data-block].is-drop-before::after { top: -7px; }
+.canvas .obj.is-drop-after::after,
+.canvas [data-block].is-drop-after::after { bottom: -7px; }
+.canvas .b-form { max-width: none; }
+
+/* ------------------------------------------------------------- settings */
+
+.env-list { display: grid; grid-template-columns: auto 1fr; gap: 6px var(--ui-s-4); margin: 0; }
+.env-list dt { font-size: var(--ui-fs-xs); font-weight: 600; color: var(--ui-grey-500); }
+.env-list dd { margin: 0; font-size: var(--ui-fs-sm); color: var(--ui-ink); }
+.env-list code {
+  font-family: var(--ui-font-mono); font-size: 11px;
+  background: var(--ui-grey-100); padding: 1px 5px; border-radius: 4px;
+}
+
+/* A logo may be light or dark; a chequerboard keeps both readable. */
+.media-preview-frame, [data-media-picker] [data-preview] {
+  background-color: var(--ui-preview);
+  background-image:
+    linear-gradient(45deg, var(--ui-shade) 25%, transparent 25% 75%, var(--ui-shade) 75%),
+    linear-gradient(45deg, var(--ui-shade) 25%, transparent 25% 75%, var(--ui-shade) 75%);
+  background-size: 14px 14px;
+  background-position: 0 0, 7px 7px;
+}
+[data-media-picker] [data-preview] img { padding: var(--ui-s-2); }
+
+/* --------------------------------------------------------- image picker */
+
+.picker { position: relative; display: inline-block; }
+.picker__slot {
+  display: grid; place-items: center; overflow: hidden;
+  width: 148px; min-height: 104px; padding: 0;
+  border: 1px dashed var(--ui-line); border-radius: var(--ui-radius);
+  background: var(--ui-off-white); color: var(--ui-grey-300); cursor: pointer;
+  transition: border-color .13s var(--ui-ease), color .13s var(--ui-ease), background .13s var(--ui-ease);
+}
+.picker__slot:hover { border-color: var(--ui-accent); color: var(--ui-accent); background: var(--ui-accent-tint); }
+.picker__slot:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 2px; }
+.picker__slot img { width: 100%; height: auto; display: block; }
+.picker__slot:has(img) { border-style: solid; padding: var(--ui-s-2); background: var(--ui-white); }
+.picker__empty { display: grid; place-items: center; }
+.picker__name { font-size: var(--ui-fs-xs); padding: var(--ui-s-3); color: var(--ui-grey-500); }
+
+.picker__clear {
+  position: absolute; top: -7px; right: -7px;
+  width: 22px; height: 22px; display: grid; place-items: center;
+  border: 1px solid var(--ui-line); border-radius: var(--ui-radius-pill);
+  background: var(--ui-white); color: var(--ui-grey-500); cursor: pointer; padding: 0;
+  box-shadow: var(--ui-shadow-sm);
+}
+.picker__clear:hover { background: var(--ui-danger-tint); color: var(--ui-danger); border-color: var(--ui-danger-tint); }
+
+/* ========================================================= theme setup */
+
+/* A colour row is a background, a name and the ink that goes on it. The two
+   chips sit either side of the name so the pairing reads as one thing —
+   which is the point of the model: you never pick a text colour alone. */
+.swatch-list { display: grid; gap: var(--ui-s-2); }
+
+.swatch-row {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto;
+  gap: var(--ui-s-3); align-items: center;
+}
+.swatch-row__name {
+  height: var(--ui-control-h); padding: 0 var(--ui-control-px);
+  font: inherit; font-size: var(--ui-control-fs);
+  border: var(--ui-control-border); border-radius: var(--ui-control-radius);
+  background: var(--ui-control-bg); color: var(--ui-ink); min-width: 0;
+}
+.swatch-row__name:focus-visible { outline: none; border-color: var(--ui-accent); box-shadow: var(--ui-ring); }
+
+/* The native colour input is kept but made invisible: it opens the OS picker,
+   which is far better than anything worth rebuilding here, while the chip
+   beside it is what actually gets seen. */
+.swatch { position: relative; display: block; cursor: pointer; line-height: 0; }
+.swatch input[type="color"] {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  opacity: 0; cursor: pointer; border: 0; padding: 0;
+}
+.swatch__chip {
+  display: grid; place-items: center;
+  width: 40px; height: var(--ui-control-h);
+  border: 1px solid var(--ui-line); border-radius: var(--ui-control-radius);
+  font-size: var(--ui-fs-sm); font-weight: 600; line-height: 1;
+}
+.swatch--ink .swatch__chip { width: 34px; }
+.swatch input[type="color"]:focus-visible + .swatch__chip {
+  outline: 2px solid var(--ui-accent); outline-offset: 2px;
+}
+
+/* --- properties path --- */
+
+/* A slice is selected by clicking its own area, and nothing on the canvas
+   says so - on a full slice that area is a thin ring. The path makes every
+   level reachable from whatever is selected, without aiming for it. */
+.crumbs {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 2px;
+  font-size: var(--ui-fs-sm); min-width: 0;
+}
+.crumbs__step {
+  border: 0; background: none; padding: 2px 4px; margin: 0 -2px;
+  font: inherit; color: var(--ui-accent); cursor: pointer; border-radius: 5px;
+}
+.crumbs__step:hover { background: var(--ui-accent-tint); }
+.crumbs__step:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 1px; }
+.crumbs__here { padding: 2px 4px; font-weight: 600; color: var(--ui-ink); }
+.crumbs__sep { display: grid; place-items: center; color: var(--ui-grey-300); }
+
+/* --- segmented control (alignment) --- */
+
+/* Three fixed choices with obvious pictures. A dropdown made the commonest
+   setting in the panel cost two clicks and a read. */
+.segment {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  border: var(--ui-control-border); border-radius: var(--ui-control-radius);
+  background: var(--ui-control-bg); overflow: hidden;
+}
+.segment__btn {
+  display: grid; place-items: center; height: calc(var(--ui-control-h) - 2px);
+  border: 0; background: none; color: var(--ui-grey-500); cursor: pointer; padding: 0;
+  transition: background .12s var(--ui-ease), color .12s var(--ui-ease);
+}
+.segment__btn + .segment__btn { border-left: 1px solid var(--ui-line); }
+.segment__btn:hover { background: var(--ui-grey-100); color: var(--ui-ink); }
+/* The pressed one is filled, not accented: the accent marks what you are
+   working on, and this is reporting a value, not an action. */
+.segment__btn.is-on { background: var(--ui-selected); color: var(--ui-selected-ink); }
+.segment__btn:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: -2px; }
+
+/* --- colour swatches --- */
+
+/* Small and fixed, wrapping to fill the panel. They were a quarter of the
+   panel's width each, which turned a colour choice into the tallest thing on
+   screen and pushed the settings under it out of sight. */
+.swatch-grid { display: grid; grid-template-columns: repeat(auto-fill, 30px); gap: 5px; }
+.swatch-pick {
+  padding: 0; border: 0; background: none; cursor: pointer; line-height: 0;
+  border-radius: var(--ui-radius-sm);
+}
+.swatch-pick__chip {
+  display: block; width: 100%; aspect-ratio: 1 / 1;
+  border: 1px solid var(--ui-line); border-radius: var(--ui-radius-sm);
+}
+.swatch-pick:hover .swatch-pick__chip { border-color: var(--ui-grey-300); }
+.swatch-pick.is-on .swatch-pick__chip {
+  border-color: var(--ui-ink);
+  box-shadow: 0 0 0 2px var(--ui-white) inset, 0 0 0 2px var(--ui-ink);
+}
+.swatch-pick:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 2px; }
+
+/* "None" is an empty square struck through, so an absent colour is still
+   something to aim at - it is the default and the way back from a mistake. */
+.swatch-pick__chip--none {
+  background:
+    linear-gradient(to top right,
+      transparent calc(50% - 1px), var(--ui-danger) calc(50% - 1px),
+      var(--ui-danger) calc(50% + 1px), transparent calc(50% + 1px)),
+    var(--ui-white);
+}
+
+/* --- table colour map ---
+
+   Twenty rows and a palette cannot both fit in a 300px panel, so the table's
+   shape is drawn small and you click a number to say which row or column the
+   swatches below are colouring. Every square is filled with the colour that
+   cell will actually draw, stripe and precedence included, so the map is a
+   preview as well as a target - which is what stops "why is that row still
+   grey?" being a question you have to reason your way to. */
+.tbl-map {
+  display: grid;
+  grid-template-columns: 16px repeat(var(--tbl-cols, 3), minmax(0, 1fr));
+  gap: 2px;
+}
+.tbl-map__head {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 16px; padding: 0; border: 0; border-radius: 3px;
+  background: var(--ui-grey-100); color: var(--ui-grey-500);
+  font: inherit; font-size: 10px; line-height: 1; cursor: pointer;
+}
+.tbl-map__head:hover { background: var(--ui-grey-200); color: var(--ui-ink); }
+.tbl-map__head.is-on { background: var(--ui-selected); color: var(--ui-selected-ink); }
+.tbl-map__head:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 1px; }
+.tbl-map__cell {
+  min-height: 16px; border-radius: 3px; border: 1px solid var(--ui-line);
+}
+/* A cell with no colour anywhere on it is hatched rather than left white, or
+   it would be indistinguishable from one deliberately painted White. */
+.tbl-map__cell.is-bare {
+  background: repeating-linear-gradient(45deg,
+    var(--ui-grey-100) 0 3px, var(--ui-white) 3px 6px);
+}
+
+/* Row of chips in the "replace the palette" dialog. */
+.swatch-preview { display: flex; flex-wrap: wrap; gap: 6px; margin: var(--ui-s-4) 0; }
+.swatch-preview .swatch__chip { width: 34px; height: 34px; }
+
+/* --- preview panel --- */
+.theme-preview { display: grid; gap: var(--ui-s-4); }
+.theme-preview__surfaces {
+  display: grid; border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius); overflow: hidden;
+}
+.theme-preview__band {
+  padding: var(--ui-s-3) var(--ui-s-4);
+  font-size: var(--ui-fs-sm); font-weight: 500;
+}
+.theme-preview__type {
+  padding: var(--ui-s-4); border: 1px solid var(--ui-line); border-radius: var(--ui-radius);
+  background: var(--ui-white);
+}
+.theme-preview__h { margin: 0 0 var(--ui-s-2); font-weight: 700; letter-spacing: -.02em; line-height: 1.15; }
+.theme-preview__b { margin: 0; color: var(--ui-grey-700); line-height: 1.55; }
+
+/* ========================================================= link popover */
+
+/* Choosing a link near the words it will wrap, rather than in a browser
+   prompt that can only take a string typed from memory. */
+.link-pop {
+  position: fixed; z-index: 90; width: 320px; max-width: calc(100vw - 24px);
+  display: grid; gap: var(--ui-s-3);
+  padding: var(--ui-s-4);
+  border: 1px solid var(--ui-line); border-radius: var(--ui-radius);
+  background: var(--ui-white); box-shadow: var(--ui-shadow-lg);
+}
+.link-pop .field { gap: 4px; }
+.link-pop__actions { display: flex; gap: var(--ui-s-2); }

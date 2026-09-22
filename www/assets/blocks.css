@@ -1,0 +1,504 @@
+/* ===================================================================
+   Content blocks — shared presentation.
+
+   Loaded by both the public site and the CMS canvas so that what an
+   editor sees is what a visitor gets. Class names are `b-` prefixed to
+   stay clear of the CMS's own interface classes.
+   =================================================================== */
+
+.b-blocks { display: grid; gap: var(--s-7); }
+
+/* Anything carrying an anchor has to clear the sticky top bar when jumped to,
+   or the thing you followed the link for sits underneath it. Only anchored
+   elements get an id, so this reaches exactly them. */
+.b-slice[id], .b-heading[id] { scroll-margin-top: calc(var(--topbar-h, 96px) + var(--s-4)); }
+
+/* --- text ------------------------------------------------------------ */
+
+/* One size out of three factors: the theme's number for this step, the
+   theme's overall percentage, and what a phone takes off it. Stated once
+   here rather than nine times over, so a step is one custom property and
+   nothing else - which is what lets the theme screen own the numbers. */
+.b-heading {
+  margin: 0;
+  font-family: var(--font-heading);
+  --type-at: var(--h-large);
+  --type-factor: 1;
+  font-size: calc(var(--type-at) * var(--font-scale) * var(--type-factor));
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tracking-tight);
+  font-weight: 700;
+  color: var(--ink);
+}
+/* Size is named and separate from the tag: a hero heading and a section
+   heading are different typography, not different places in the outline.
+   The base rule restates the default rather than leaving it to a var()
+   fallback, so a size can never be inherited from an enclosing block. */
+.b-heading--small   { --type-at: var(--h-small);   letter-spacing: -.01em; font-weight: 600; }
+.b-heading--medium  { --type-at: var(--h-medium);  letter-spacing: -.02em; font-weight: 600; }
+.b-heading--large   { --type-at: var(--h-large); }
+.b-heading--xlarge  { --type-at: var(--h-xlarge); }
+.b-heading--display { --type-at: var(--h-display); letter-spacing: -.045em; line-height: 1.02; }
+
+.b-text {
+  --type-at: var(--t-body);
+  --type-factor: 1;
+  font-size: calc(var(--type-at) * var(--font-scale) * var(--type-factor));
+  line-height: var(--lh-body);
+  color: var(--graphite);
+  max-width: 72ch;
+}
+/* How big a block of text draws, separately from what it is. An intro under a
+   hero is body copy that happens to be larger - making it a heading to get
+   the size would put a rung in the page's outline nobody asked for.
+   The reading measure widens with the type, or a large size would run to
+   half the characters per line that body copy does. */
+.b-text--small  { --type-at: var(--t-small);  max-width: 68ch; }
+.b-text--large  { --type-at: var(--t-large);  line-height: 1.55; max-width: 60ch; }
+.b-text--xlarge {
+  /* A real step, not a nudge: this is the intro that sits under a hero, and
+     at 21px against a 20px `large` it read as the same size with extra
+     ceremony. */
+  --type-at: var(--t-xlarge);
+  line-height: var(--lh-snug); color: var(--ink); max-width: 46ch;
+}
+
+/* What a phone takes off each step.
+   Per step, and deliberately not one number in the theme: a display heading
+   is a hero and has to become a phone-sized hero, while 30px is already a
+   phone-sized section heading and should barely move. One ratio for all nine
+   either leaves the headline too big or shrinks the heading into the body
+   copy. The small steps are phone-sized as they stand and are left alone.
+   These are what the hand-picked clamp floors used to say, in the one place
+   that decides what a size measures. */
+@media (max-width: 700px) {
+  .b-heading--large   { --type-factor: .85; }
+  .b-heading--xlarge  { --type-factor: .72; }
+  .b-heading--display { --type-factor: .5; }
+  .b-text--xlarge     { --type-factor: .8; }
+}
+.b-text > :first-child { margin-top: 0; }
+.b-text > :last-child { margin-bottom: 0; }
+.b-text p { margin: 0 0 var(--s-3); }
+.b-text h2 { font-size: var(--fs-xl); margin: var(--s-5) 0 var(--s-2); letter-spacing: var(--tracking-tight); }
+.b-text h3 { font-size: var(--fs-lg); margin: var(--s-4) 0 var(--s-2); }
+.b-text h4 { font-size: var(--fs-md); margin: var(--s-4) 0 var(--s-2); font-weight: 600; }
+.b-text ul, .b-text ol { margin: 0 0 var(--s-3); padding-left: 1.35em; }
+.b-text li { margin-bottom: 6px; }
+.b-text a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+.b-text strong { font-weight: 600; }
+.b-text blockquote {
+  margin: 0 0 var(--s-3); padding-left: var(--s-4);
+  border-left: 3px solid var(--brand-yellow); color: var(--grey-700);
+}
+
+.b-quote {
+  margin: 0;
+  font-size: clamp(1.4rem, 2.8vw, var(--fs-2xl));
+  line-height: var(--lh-snug);
+  letter-spacing: var(--tracking-tight);
+  border-left: 3px solid var(--brand-yellow);
+  padding-left: var(--s-5);
+  color: var(--ink);
+}
+.b-quote cite {
+  display: block; margin-top: var(--s-4);
+  font-size: var(--fs-sm); font-style: normal; color: var(--grey-500);
+}
+
+/* --- alignment -------------------------------------------------------- */
+
+.b-align-left   { text-align: left; }
+.b-align-center { text-align: center; }
+.b-align-right  { text-align: right; }
+
+/* Alignment has to move the box, not just the text inside it. The class sits
+   on the block itself, so match it there rather than on a parent. */
+.b-button, .b-link { display: flex; justify-content: flex-start; }
+.b-button.b-align-center, .b-link.b-align-center { justify-content: center; }
+.b-button.b-align-right,  .b-link.b-align-right  { justify-content: flex-end; }
+
+.b-text.b-align-center { margin-inline: auto; }
+/* On the figure, not the img: the img fills its frame, so a margin on it has
+   nothing to move within. Alignment only becomes visible once a size caps the
+   figure below the column width. */
+.b-image.b-align-center { margin-inline: auto; }
+.b-image.b-align-right  { margin-inline: auto 0; }
+.b-quote.b-align-center { margin-inline: auto; }
+
+/* --- button / link ---------------------------------------------------- */
+
+.b-button__el {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2);
+  min-height: var(--control-h); padding: 0 var(--s-5);
+  font-family: inherit; font-size: var(--fs-base); font-weight: 600; line-height: 1;
+  border: 1px solid var(--ink); border-radius: var(--radius-pill);
+  background: transparent; color: var(--ink); text-align: center;
+  transition: background .15s var(--ease), color .15s var(--ease), border-color .15s var(--ease);
+}
+.b-button__el:hover { background: var(--ink); color: var(--white); }
+
+/* Three sizes. The largest is a hero's button, not a bigger version of the
+   ordinary one, so it takes a step up in type as well as in box. */
+.b-button__el--small { min-height: 34px; padding: 0 var(--s-4); font-size: var(--fs-sm); }
+.b-button__el--large {
+  min-height: 58px; padding: 0 var(--s-7); font-size: var(--fs-lg); gap: var(--s-3);
+}
+
+/* A coloured button's own rules are generated from the palette in
+   src/lib/theme.js - one pair per colour, filled and outlined. Only the
+   uncoloured fallback lives here, so a button whose colour has since been
+   deleted from the theme still draws as a button. */
+.b-button__el--outline { background: transparent; }
+
+.b-link__el {
+  color: var(--accent); font-weight: 500; font-size: var(--fs-base);
+  border-bottom: 1px solid rgba(53, 122, 187, .35); padding-bottom: 1px;
+}
+.b-link__el:hover { border-bottom-color: var(--accent); }
+
+/* --- media ------------------------------------------------------------ */
+
+/* As wide as what holds it, up to the size cap below. Left to size itself a
+   figure is as wide as its picture - and one with no picture yet, or one
+   still loading, is no width at all, so anything that placed it (a centred
+   column, its own alignment) shrank it to a sliver. */
+.b-image { margin: 0; width: 100%; }
+/* Display size is a named cap, never a stored pixel value: the page keeps the
+   intent and this file decides what it measures. Each is still bounded by the
+   column, so `large` in a narrow column simply fills it. */
+.b-image--small  { max-width: 180px; }
+.b-image--medium { max-width: 320px; }
+.b-image--large  { max-width: 520px; }
+/* The frame adds nothing of its own. It rounds and clips, and that is all: a
+   transparent PNG has to come out transparent, and what shows through it is
+   whatever the slice behind it is - which on an unpainted slice is nothing. */
+.b-image__frame {
+  border-radius: var(--radius-lg); overflow: hidden;
+  display: block; position: relative;
+}
+/* Corners, by name, on the same scale a card uses - so each name measures
+   what it does there. Large is the frame's own radius above and carries no
+   class. None is for artwork that must not be rounded, which is usually a
+   logo: its guidelines own its shape, and on an opaque file the rounding shows. */
+.b-image--r-none .b-image__frame   { border-radius: 0; }
+.b-image--r-small .b-image__frame  { border-radius: var(--radius-sm); }
+.b-image--r-medium .b-image__frame { border-radius: var(--radius-card); }
+/* The one exception is a frame with nothing in it - an image object whose
+   picture was never chosen, or whose file has since been deleted from the
+   library. That has to be visible enough to notice and fix, where an
+   invisible zero-height gap would just quietly swallow the mistake. */
+.b-image__frame:empty { background: var(--sand); min-height: 180px; }
+.b-image__frame img, .b-image__frame video { width: 100%; height: auto; display: block; }
+.b-image figcaption {
+  margin-top: var(--s-3); font-size: var(--fs-base); font-style: italic; color: var(--grey-500);
+}
+.b-file {
+  display: inline-flex; align-items: center; gap: var(--s-2);
+  padding: var(--s-4); color: var(--ink); font-size: var(--fs-base);
+}
+
+/* --- code ------------------------------------------------------------- */
+
+/* Shown, never run, and never highlighted: a parser per language would be a
+   dependency, and the label plus a monospace face carries most of the meaning.
+   The pre scrolls inside its own box so a long line never widens the page. */
+.b-code {
+  border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--off-white); overflow: hidden;
+}
+.b-code__label {
+  padding: var(--s-2) var(--s-4);
+  border-bottom: 1px solid var(--line);
+  font-size: var(--fs-xs); font-family: var(--font-mono);
+  color: var(--grey-500); letter-spacing: var(--tracking-wide); text-transform: uppercase;
+}
+.b-code__pre {
+  margin: 0; padding: var(--s-4);
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+  font-family: var(--font-mono); font-size: var(--fs-sm);
+  line-height: 1.55; color: var(--ink); tab-size: 2;
+}
+.b-code__pre code { font: inherit; white-space: pre; }
+
+/* --- embed ------------------------------------------------------------ */
+
+.b-embed { margin: 0; }
+.b-embed__frame {
+  border-radius: var(--radius-lg); overflow: hidden; background: var(--sand);
+  position: relative;
+}
+.b-embed__frame iframe { width: 100%; height: 100%; display: block; border: 0; }
+.b-embed figcaption {
+  margin-top: var(--s-3); font-size: var(--fs-base); font-style: italic; color: var(--grey-500);
+}
+/* A URL no provider matched. Shown as a link rather than dropped: the author
+   meant something by it, and silence is the least useful answer. */
+.b-embed--plain { margin: 0; font-size: var(--fs-base); }
+.b-embed--plain a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+
+/* --- breadcrumbs ------------------------------------------------------ */
+
+/* The trail is both page furniture and an object an author can place, so it
+   is styled here rather than in site.css - the editor canvas loads this file
+   and not that one, and both have to draw it the same. site.css adds only the
+   top padding the page frame's copy needs. */
+.breadcrumbs {
+  display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap;
+  font-size: var(--fs-xs); color: var(--grey-500);
+}
+.breadcrumbs a { color: var(--grey-500); }
+.breadcrumbs a:hover { color: var(--ink); }
+.breadcrumbs svg { width: 14px; height: 14px; }
+.breadcrumbs__sep { color: var(--grey-300); }
+
+/* Placed as an object it brings no padding of its own; the slice does that. */
+.b-breadcrumbs .breadcrumbs { padding: 0; }
+.b-breadcrumbs.b-align-center .breadcrumbs { justify-content: center; }
+.b-breadcrumbs.b-align-right .breadcrumbs { justify-content: flex-end; }
+
+/* --- structure -------------------------------------------------------- */
+
+/* --- table -------------------------------------------------------------
+   Tabular data, not layout: it keeps its shape on a phone and scrolls
+   sideways inside its own wrapper rather than squeezing or stacking. */
+.b-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+/* No background of its own. It used to force var(--white), which on any
+   coloured band drew a white slab under text the band had already turned
+   white - a table on Ink was invisible. A background is a choice now, made
+   from the palette and stored on the table, so the ink comes with it; left
+   unmade the band shows through, which is what every other object does.
+
+   The same goes for a row's colour, a column's and the stripe: there is no
+   rule for them here either. render.js works out which one wins and puts a
+   single `.b-surface--*` on the cell, so a dark row inside a light table gets
+   its light text and its lighter border from the theme's own surface rule. */
+.b-table {
+  border-collapse: collapse; width: 100%; min-width: min(100%, 460px);
+  font-size: var(--fs-base);
+}
+.b-table th, .b-table td { text-align: left; vertical-align: top; }
+/* A cell's objects stack like a column's, but without the outer margins that
+   would otherwise fight the cell padding. */
+.b-table th > * + *, .b-table td > * + * { margin-top: var(--s-3); }
+.b-table th > .b-text > :first-child, .b-table td > .b-text > :first-child { margin-top: 0; }
+.b-table th > .b-text > :last-child, .b-table td > .b-text > :last-child { margin-bottom: 0; }
+/* Inside a cell the measure is the cell, so the size caps do not apply. */
+.b-table .b-text { max-width: none; }
+.b-table .b-image { margin: 0; }
+.b-table th { font-weight: 600; color: var(--ink); }
+.b-table thead th {
+  border-bottom: calc(var(--line-width, 1px) + 1px) var(--line-style, solid)
+    var(--line-colour, var(--line));
+}
+
+/* Line appearance is carried on custom properties, so the edge rules below
+   stay one rule each instead of multiplying style x width x colour. */
+.b-line--dashed { --line-style: dashed; }
+.b-line--dotted { --line-style: dotted; }
+.b-line--w-medium { --line-width: 2px; }
+.b-line--w-thick  { --line-width: 3px; }
+.b-line--c-medium { --line-colour: var(--grey-300); }
+.b-line--c-strong { --line-colour: var(--grey-700); }
+.b-line--c-accent { --line-colour: var(--accent); }
+
+/* Defaults live in the var() fallbacks, not in a rule on .b-table: a rule
+   would sit at the same specificity as the .b-line--* classes on the very
+   same element, and whichever came last in this file would win. */
+.b-table--all th, .b-table--all td {
+  border: var(--line-width, 1px) var(--line-style, solid) var(--line-colour, var(--line));
+}
+.b-table--rows tr + tr th, .b-table--rows tr + tr td {
+  border-top: var(--line-width, 1px) var(--line-style, solid) var(--line-colour, var(--line));
+}
+.b-table--columns th + th, .b-table--columns td + td {
+  border-left: var(--line-width, 1px) var(--line-style, solid) var(--line-colour, var(--line));
+}
+
+.b-table--pad-small th,  .b-table--pad-small td  { padding: 6px var(--s-2); }
+.b-table--pad-medium th, .b-table--pad-medium td { padding: var(--s-3) var(--s-4); }
+.b-table--pad-large th,  .b-table--pad-large td  { padding: var(--s-4) var(--s-5); }
+
+.b-divider {
+  border: 0; margin: 0;
+  border-top: var(--line-width, 1px) var(--line-style, solid) var(--line-colour, var(--line));
+}
+.b-spacer { display: block; }
+
+/* --- slices ------------------------------------------------------------
+   The slice is the page's only block. It owns the layout; its objects own
+   only their own content. */
+
+/* A slice is a band and an inner box. The band runs the full width of
+   whatever contains it and carries the background; the inner box caps how
+   wide the content draws. One element cannot do both — a background that
+   stops where the text stops is a card, not a section.
+
+   The layout classes below sit on the inner box and are matched by class
+   alone, so moving them down a level changed nothing about them. */
+.b-slice { display: block; }
+.b-slice__inner { display: grid; gap: var(--s-6); margin-inline: auto; }
+
+/* Container widths come from the theme. `full` is the only one with no cap:
+   in a page whose template already caps the body these all clip to that, and
+   on a Blank page they are the whole decision.
+
+   Capped as a *width* rather than a max-width, which is what `.shell` and
+   `.body-col` already do, and for the reason this got wrong: a max-width
+   leaves a gutter only while the window is wider than the cap. Below that the
+   box is simply 100% and the text sits on the glass - invisible on a desktop,
+   and every phone once the site had content on it. The `min()` keeps the box
+   exactly as wide as its cap where there is room, and inset by a gutter
+   where there is not. */
+.b-slice__inner--narrow { width: min(var(--measure-max), calc(100% - var(--gutter) * 2)); }
+.b-slice__inner--body   { width: min(var(--body-max),    calc(100% - var(--gutter) * 2)); }
+.b-slice__inner--wide   { width: min(var(--shell-max),   calc(100% - var(--gutter) * 2)); }
+.b-slice__inner--full   { max-width: none; }
+
+/* A band that carries a background needs room to breathe, and gets it as a
+   number *seeded onto the slice* when the background is chosen - not from a
+   rule here. Applied here it was padding the spacing fields swore was zero,
+   which is the same bug as the slice margin and the card padding wearing a
+   third hat.
+
+   The horizontal gutter stays, and is not the same thing: it is on the inner
+   box rather than on the slice the padding fields write to, and it is what
+   keeps a full-bleed band's text off the window glass. That is the
+   container's business, not the author's.
+
+   Only `full` needs it here now. The capped containers get the same gutter
+   from their own width, and applying both would inset them twice. A `full`
+   band has no cap to get it from - and an *unsurfaced* full slice keeps none,
+   because edge to edge is the thing it was chosen for. */
+.b-slice[class*="b-surface--"] > .b-slice__inner--full { padding-inline: var(--gutter); }
+
+.b-slice__col { display: grid; gap: var(--s-4); align-content: start; min-width: 0; }
+
+/* --- cards ------------------------------------------------------------
+   A card is a column with a surface, an outline, or both. Not an object of
+   its own: a card is a box, a box is layout, and layout is the slice's
+   business - objects are content and lay nothing out. Three across come out
+   the same height with no work, because the columns are grid items and
+   already stretch to the tallest.
+
+   The padding is *seeded onto the column* when a card is switched on rather
+   than applied here, so the spacing fields tell the truth about it and it can
+   be typed back to 0. */
+.b-card { border-radius: var(--radius-card); }
+.b-card--r-none   { border-radius: 0; }
+.b-card--r-small  { border-radius: var(--radius-sm); }
+.b-card--r-large  { border-radius: var(--radius-lg); }
+.b-card--bordered {
+  border: var(--line-width, 1px) var(--line-style, solid) var(--line-colour, var(--line));
+}
+
+/* Column counts, then the splits that override them. minmax(0, …) stops a
+   wide child forcing its track past its share. */
+.b-slice--cols-1 { grid-template-columns: minmax(0, 1fr); }
+.b-slice--cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.b-slice--cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.b-slice--cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+.b-slice--50-50 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.b-slice--67-33 { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+.b-slice--33-67 { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
+.b-slice--75-25 { grid-template-columns: minmax(0, 3fr) minmax(0, 1fr); }
+.b-slice--25-75 { grid-template-columns: minmax(0, 1fr) minmax(0, 3fr); }
+.b-slice--equal       { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.b-slice--wide-left   { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr); }
+.b-slice--wide-center { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr); }
+.b-slice--wide-right  { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 2fr); }
+
+.b-slice--gap-none   { gap: 0; }
+.b-slice--gap-small  { gap: var(--s-3); }
+.b-slice--gap-large  { gap: var(--s-8); }
+
+/* Width as a proportion of the content column, so "half the page" needs no
+   arithmetic. Every one of them goes full width on a phone, which is what
+   makes them safe to reach for without thinking about small screens. */
+.b-slice--w-three-quarters { width: 75%; margin-inline: auto; }
+.b-slice--w-half           { width: 50%; margin-inline: auto; }
+.b-slice--w-measure        { max-width: var(--measure-max, 700px); margin-inline: auto; }
+
+/* Vertical placement of a column's contents within the row. */
+.b-slice__col.b-valign-middle { align-content: center; }
+.b-slice__col.b-valign-bottom { align-content: end; }
+/* Horizontal alignment moves the boxes, not just their text. */
+.b-slice__col.b-align-center { justify-items: center; text-align: center; }
+.b-slice__col.b-align-right  { justify-items: end; text-align: right; }
+/* But only the boxes that are narrower than the column by nature - a button,
+   a link, a line of text. Moving a box shrinks it to its content, and these
+   only have a content width by accident: a divider went to nothing, an embed
+   to 300px, a form and a table to whatever their fields and cells happened
+   to need. So they keep the column's width wherever they sit. An image does
+   too, through its own width (see media), and a capped one is then placed
+   like any other box. The canvas says the same of its wrappers in cms.css. */
+.b-slice__col > .b-divider,
+.b-slice__col > .b-spacer,
+.b-slice__col > .b-embed,
+.b-slice__col > .b-table-wrap,
+.b-slice__col > .b-code,
+.b-slice__col > .b-form,
+.b-slice__col > .article-feed { justify-self: stretch; }
+
+/* --- forms ------------------------------------------------------------ */
+
+/* Two columns, so a field set to half width takes one of them and the next
+   field sits beside it. That is the only layout a form owns, deliberately:
+   the fields used to live inside slices, which brought a background, a
+   padding and a container width along with them - a whole level of control
+   for something that is a list of questions.
+
+   No max-width. A form takes the width of whatever holds it, so a tight one
+   can sit in a card or a table cell; the column it is in decides. */
+.b-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-4); }
+/* Everything spans both columns unless it asks not to. */
+.b-form > * { grid-column: 1 / -1; }
+.b-form > .b-field--half { grid-column: span 1; }
+/* One column where there is no room for two. */
+@media (max-width: 560px) {
+  .b-form > .b-field--half { grid-column: 1 / -1; }
+}
+.b-form__heading { margin: 0 0 var(--s-2); }
+.b-field { display: grid; gap: 6px; }
+.b-field > label { font-size: var(--fs-sm); font-weight: 600; color: var(--grey-700); }
+.b-field__hint { font-size: var(--fs-xs); color: var(--grey-500); }
+.b-field__req { color: var(--danger); }
+
+/* A country prefix and a number are one answer, so they sit on one row under
+   one label. They stay side by side at every width rather than stacking: two
+   boxes stacked under one label read as two questions, which is the thing the
+   row is there to prevent.
+
+   The number has the floor, not the select. A select sizes itself to the
+   country it is showing, and "Bosnien och Hercegovina (+387)" in a half-width
+   column left about forty pixels to type a phone number into. So the number
+   claims 9em first and the select takes what is left, giving up the tail of
+   a long country name before the box you actually type in gives up anything.
+   Clipped, it still shows the flag and the start of the name, and the list is
+   untouched when it is open. */
+.b-phone { display: grid; grid-template-columns: minmax(0, auto) minmax(9em, 1fr); gap: var(--s-2); }
+.b-phone__code, .b-phone__number { min-width: 0; }
+
+/* A radio group is one question with several answers, so the legend does the
+   label's job and the answers stack under it. */
+.b-field--group { border: 0; padding: 0; margin: 0; min-width: 0; }
+.b-field--group legend {
+  padding: 0; margin-bottom: var(--s-2);
+  font-size: var(--fs-sm); font-weight: 600; color: var(--grey-700);
+}
+.b-field--group .b-checkbox + .b-checkbox { margin-top: 4px; }
+.b-form__status { padding: var(--s-4) var(--s-5); border-radius: var(--radius); font-size: var(--fs-base); }
+.b-form__status--ok { background: var(--success-tint); color: var(--success); }
+.b-form__status--error { background: var(--danger-tint); color: var(--danger); }
+.b-form .b-checkbox { display: flex; align-items: center; gap: var(--s-2); font-size: var(--fs-base); }
+
+@media (max-width: 760px) {
+  /* Every slice stacks and fills the screen on a phone, whatever it was asked
+     to do on a desktop. The count classes are always emitted alongside the
+     split, so matching them here covers every combination. */
+  .b-slice--cols-2, .b-slice--cols-3, .b-slice--cols-4 { grid-template-columns: 1fr; }
+  .b-slice--w-three-quarters, .b-slice--w-half, .b-slice--w-measure {
+    width: auto; max-width: none;
+  }
+}
