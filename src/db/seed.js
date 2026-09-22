@@ -1,13 +1,12 @@
 import { db, get, run, setting } from './index.js';
-import { pages, menus, categories } from '../models.js';
+import { pages, menus } from '../models.js';
 import * as settings from '../lib/settings.js';
 import { newId } from '../lib/objects.js';
 
 /**
  * Structural seed only.
  *
- * This creates the scaffolding - the two menus, a news
- * category and four top-level pages - and deliberately leaves all page
+ * This creates the scaffolding - the two menus and four top-level pages - and deliberately leaves all page
  * content empty. Content is authored in the CMS, and the pages are only a
  * starting shape: rename them, move them, delete them.
  *
@@ -29,8 +28,6 @@ const TOP_PAGES = [
   { title: 'Contact', permalink: '/contact', extra: true },
 ];
 
-const NEWS_CATEGORIES = ['News'];
-
 /* By name, because the site finds its secondary menu by name - see
    extraMenu() in src/routes/site.js. */
 export const MAIN_MENU = 'Main menu';
@@ -45,11 +42,9 @@ export async function seed({ force = false } = {}) {
   /* Page templates are seeded with nothing, like slices: the library fills
      from real pages, saved out of the editor. */
 
-  /* --- categories --------------------------------------------------- */
-  const existingCats = new Set(categories.list().map((c) => c.name));
-  for (const name of NEWS_CATEGORIES) {
-    if (!existingCats.has(name)) categories.create(name, null);
-  }
+  /* No categories. A category says what an article is about, and a fresh
+     site does not know its subjects yet - "News" would say what an article
+     *is*, which the News page already does by showing all of them. */
 
   /* --- pages -------------------------------------------------------- */
   const created = [];
@@ -99,7 +94,7 @@ export async function seed({ force = false } = {}) {
 export async function ensureSeed() {
   const fresh = await seed();
   if (fresh) {
-    console.log('  [seed] Structure created: pages, menus, categories.');
+    console.log('  [seed] Structure created: pages and menus.');
   }
   return fresh;
 }

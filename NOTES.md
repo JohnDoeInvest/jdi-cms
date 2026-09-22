@@ -7,7 +7,10 @@ half-done. Kept short.
 
 - Public site: pages, articles, menus, forms, media — all driven by the CMS.
 - CMS: dashboard, pages + WYSIWYG editor, articles, media library, menus,
-  categories, page templates, users, settings.
+  categories, page templates, users, settings, and an Account screen for
+  your own password. A fresh install makes its first admin at `/cms/setup`
+  and seeds four empty pages (Home, About, News, Contact), a Main menu and a
+  Secondary menu, and no categories.
 - Tables are an object of their own: tabular data keeps its shape and scrolls,
   where a slice's columns are layout and stack on a phone. A cell holds objects
   like a column does - anything but another table or a form field.
@@ -20,9 +23,9 @@ half-done. Kept short.
 - **A slice can be hidden** (2026-09-22) - the eye in its tool row. It stays
   on the page, in place and editable, under a striped veil with a "Hidden"
   tag that never goes away, and it is off the site from the next publish.
-  Mac's uses: an alternative version kept beside the section that is live,
-  and campaigns and seasonal sections between runs. He had been parking
-  variants in the slice library, which is the wrong home: the library holds
+  What it is for: an alternative version kept beside the section that is
+  live, and campaigns and seasonal sections between runs. Variants had been
+  parked in the slice library, which is the wrong home: the library holds
   building blocks for every page, and a variant parked there loses its place.
   - **An edit like any other, so Publish commits it.** Not a second publish
     system: hiding a slice on a live page makes it Live · edited, and swapping
@@ -51,10 +54,9 @@ half-done. Kept short.
   for somebody to notice. A page stores one number now; everything else is
   read from the form.
   - **It is written on the same canvas**, at *Forms*, with the palette cut to
-    the six fields plus a heading, a line of text, a rule and some air. Mac's
-    point, and the right one: the elements to build a form were already in the
-    page editor. A bespoke list of rows with its own label and placeholder
-    inputs would have been a second, weaker editor beside a good one - and a
+    the six fields plus a heading, a line of text, a rule and some air. The
+    elements to build a form were already in the page editor. A bespoke list
+    of rows with its own label and placeholder inputs would have been a second, weaker editor beside a good one - and a
     second answer to "how do I put a heading above these fields", which is a
     Heading. Same argument that kept articles on the page canvas.
   - **But a form is a *set*, not a document.** The first cut stored blocks -
@@ -83,7 +85,7 @@ half-done. Kept short.
     filtered out of it - that filter was left over from when a field could
     only live inside a Form container.
   - **A heading, a rule and some air stay in the palette.** Document-ish is
-    right here, per Mac: a long form needs sections, and those elements are
+    right here: a long form needs sections, and those elements are
     the same ones any other container will want later.
   - Fields in a panel belong in a `.stack`. Both settings panels put them
     straight into the `.panel`, so every label sat flush against the field
@@ -108,8 +110,9 @@ half-done. Kept short.
     an existing table, so it needed the by-hand `ALTER TABLE` that
     `CREATE TABLE IF NOT EXISTS` cannot do - exactly the case the schema note
     below describes.
-- Settings holds everything site-specific: name, address, language, logos,
-  favicon, form recipient, footer, social links.
+- Settings holds everything site-specific: name, address, language, country,
+  one logo (with none set, the site shows its name), favicon, how people sign
+  in, form recipient, footer, social links.
 - Navigation is a single collapsible rail. No top bar.
 - **A page has two copies.** `content` is what the public sees; `draft_content`
   is what the editor writes. They part company the moment a live page is
@@ -201,8 +204,8 @@ half-done. Kept short.
   coloured band as readily as on the page.
 - **Alignment is three buttons and a colour is its own swatch.** Both used to
   be dropdowns, which made the two commonest settings in the panel cost two
-  clicks and a read — and a colour named "Sand" in a list asks you to remember
-  what Sand looks like. "None" is drawn as an empty square struck through in
+  clicks and a read — and a colour named "Stone" in a list asks you to remember
+  what Stone looks like. "None" is drawn as an empty square struck through in
   red, because an absent colour still has to be something you can aim at.
   Buttons and selects write through one `applyProp`, so the two kinds of
   control cannot drift in what they do.
@@ -253,11 +256,11 @@ half-done. Kept short.
   libwebp underneath: at full size the files are byte for byte what cwebp
   made. sharp's default resize (Lanczos 3) is sharper than cwebp's and made
   the photographs 8% heavier at the same quality; Mitchell is the filter
-  closest to cwebp's and lands the whole library 0.3% *under* it, so Mac's
+  closest to cwebp's and lands the whole library 0.3% *under* it, so the
   q65 calibration carried over untouched. sharp also turns EXIF-rotated
   pixels upright, so nothing depends on a browser reading the tag.
-  - **One fallback per image, not a ladder** - Mac's call, since the clients
-    that need it are few. 800px at q50 through mozjpeg: a 24 KB median, and
+  - **One fallback per image, not a ladder**, since the clients that need it
+    are few. 800px at q50 through mozjpeg: a 24 KB median, and
     the whole library's fallbacks came to 564 KB, less than its 800px WebPs
     weigh. A transparent image gets a palette PNG instead, or a logo would
     sit on a white box. Pages draw `<picture>` - the WebP set as `<source>`,
@@ -273,7 +276,7 @@ half-done. Kept short.
     replaced on disk reads back as the old picture. It turned up while
     measuring, as nonsense scores, until the reads went through buffers.
 - **A centred column keeps full-width blocks full width** (2026-09-21, from
-  Mac's Partners card). Centring moves a column's boxes, and moving a box
+  a card of partner logos). Centring moves a column's boxes, and moving a box
   shrinks it to its content - right for a button or a line of text, wrong
   for an empty image (a sliver), a divider (gone), an embed (300px), or a
   form, table or code block. An image is now `width: 100%` up to its size
@@ -293,6 +296,22 @@ half-done. Kept short.
   use. Renaming a colour keeps its id, so pages referring to it still work.
   "Pick from an image" quantises a file in the browser and takes the eight most
   prominent colours; nothing is uploaded.
+- **The default theme is plain, and a site can bring its own** (2026-09-22).
+  Neutral greys and one blue accent (#357abb), a white top bar and a white
+  footer - they show the same logo, so they have to agree on a ground it
+  reads on. site.css names no colour for the site's furniture: the page, bar,
+  sub menu and footer draw from tokens named for the place (`--page-bg`,
+  `--placeholder-bg`, `--bar-*`, `--submenu-*`, `--footer-*`), and the mark
+  beside things is `--highlight`, so a theme that wants a dark bar changes a
+  value, not a rule. The Theme screen's palette ids stayed as they were, so
+  slices naming them keep their colour: `sand` shows as Stone and `brand` as
+  Tint. `THEME_DIR` names a folder whose files are served in place of those
+  in `www/assets`, everything else falling through; `tokens.css` and
+  `site.css` are the pair a theme is made of. That is what lets another site
+  be a deployment of this repo rather than a copy of it.
+- **The public site is English**, strings inline in the views. Dates are
+  en-GB in words ("22 September 2026") and ISO in figures. The subject filter
+  is `?category=`, with no alias for the Swedish name it had before.
 - **A slice is a band and an inner box.** The band runs the full width of
   whatever contains it and carries the background; the inner box caps how wide
   the content draws (`container`: narrow / body / wide / edge-to-edge, measured
@@ -367,14 +386,15 @@ half-done. Kept short.
   migrated into it and dropped.
   - **"News" was never a subject.** It said what an article *is*, where every
     other category says what it is *about* - and every article is news. So
-    filing a piece under "Nyheter" to make it appear on the news page was the
+    filing a piece under "News" to make it appear on the news page was the
     whole problem. The updates page is the **unfiltered feed**, not a filter:
-    an article about the new line is filed under Produktion and appears there
-    because that page shows everything.
+    an article about a new product is filed under Products and appears there
+    because that page shows everything. A fresh install seeds no categories
+    at all, for the same reason: it does not know its subjects yet.
   - **One taxonomy, not two.** Category + tags is WordPress's model and means
     answering "is this a category or a tag?" on every article, forever. An
-    article about hiring for the new line is about Produktion *and* Jobb &
-    karriär, and saying so once is enough.
+    article about hiring for a new product is about Products *and* Careers,
+    and saying so once is enough.
   - The **primary** subject is simply the first, and is what a card shows and
     a breadcrumb names. It is read as "lowest position", not "position = 0",
     so deleting the primary from the palette promotes the next one instead of
@@ -383,8 +403,8 @@ half-done. Kept short.
     not a multi-select, which hides what is chosen behind a scroll and gives
     no clue that more than one is allowed. The select is the primary, so
     "which is primary" needs no drag-ordering and no column of its own.
-  - Related articles match on **any shared subject**, so the heading is "Mer
-    att läsa" rather than naming one of them and then listing the others.
+  - Related articles match on **any shared subject**, so the heading is "More
+    to read" rather than naming one of them and then listing the others.
 - **A feed's count is a batch size, and `more` says what happens past it.**
   Deliberately *not* an "All" on the count: "all" of 300 articles is 300 cards
   nobody scrolls to, while `scroll` with a batch of 12 *is* all of them, a
@@ -404,18 +424,18 @@ half-done. Kept short.
   - The control is drawn **only while there is more**: a "Show more" that
     loads nothing is worse than no button. One row past the batch is fetched,
     so "is there another page" costs no second query.
-  - **Random is a pick, not a list** (2026-09-22, for the front page's
-    Porträtt card). `order` is `newest` or `random`; random is a fresh
+  - **Random is a pick, not a list** (2026-09-22, for a front-page card of
+    staff portraits). `order` is `newest` or `random`; random is a fresh
     `ORDER BY RANDOM()` on every page load, at any count. It never loads
     more: the normaliser holds its `more` at none and the panel drops the
     field, because the next batch would be a new shuffle and repeat what the
-    first showed. Mac's first thought was one card only; the count stays
+    first showed. One card only was the first thought; the count stays
     free, since it is paging that breaks, and three random portraits out of
     twenty is as sensible as one.
   - **Subject chips** are an option on the feed (`filter`). A chip narrows a
     feed within its own subjects and can never widen it - a hand-typed
-    `?kategori=` on a feed listing Produktion and Forskning cannot make it
-    show Investerare. `.chip` had been in the old news index's markup since it
+    `?category=` on a feed listing Products and Research cannot make it
+    show Investors. `.chip` had been in the old news index's markup since it
     was written with no rule anywhere styling it, so it drew as a row of plain
     links; it has styles now.
 - **An article lives under a page, and that is its address.**
@@ -423,10 +443,10 @@ half-done. Kept short.
   slug, composed on save and **frozen at publish** - the same rule the slug
   already followed, because a link that has been given out has to keep working
   however the piece is later re-titled or re-filed.
-  - **`/nyheter` was doing two jobs**: a destination in the menu *and* the
-    namespace every article lived in. The same conflation as "Nyheter the
+  - **`/news` was doing two jobs**: a destination in the menu *and* the
+    namespace every article lived in. The same conflation as "News the
     category", one level up. Both hardcoded routes are gone - there is no
-    news index and no `/nyheter/:slug` - so the updates page is an ordinary
+    news index and no `/news/:slug` - so the updates page is an ordinary
     page with a feed on it, renameable and movable like any other, and no
     article address moves when it is.
   - Pages and articles share **one address space**, checked by
@@ -435,7 +455,7 @@ half-done. Kept short.
     an article stores a whole permalink instead of deriving one at request
     time from a parent that may since have moved.
   - The article inherits its parent's **trail and sub menu**, so a piece under
-    Jobb & karriär reads Home > Jobb & karriär > Title and keeps the reader in
+    Careers reads Home > Careers > Title and keeps the reader in
     the section they came from. A URL whose every segment is somewhere you can
     actually go is the whole reason this beats putting the *subject* in the
     path - a subject slug is not a page, so chopping the last segment would
@@ -460,7 +480,8 @@ half-done. Kept short.
   clips and that is all - a transparent PNG has to come out transparent, and
   what shows through is whatever the slice behind it is. It used to carry the
   sand tint, so a logo on an unpainted slice arrived on a cream card nobody
-  had asked for. The tint survives on `:empty` only: an image object whose
+  had asked for. The tint survives on `:empty` only, as
+  `--placeholder-bg`: an image object whose
   picture was never chosen, or whose file has since left the library, has to
   be visible enough to notice, where a zero-height gap would swallow the
   mistake silently. The editor canvas never used it - it has its own dashed
@@ -472,10 +493,11 @@ half-done. Kept short.
     a transparent logo on a card was landing on cream for the same reason a
     transparent logo in an article was.
 - **The article page is white, and page furniture is not.** An article is read
-  rather than browsed, so `body.is-article` drops the paper tint and the sand
-  behind its pictures. Its pulled quote takes the interface accent rather than
-  the brand yellow the Quote *object* uses - the object sits on designed pages
-  beside the mark, the article rule sits in prose.
+  rather than browsed, so `body.is-article` drops the page's paper tint.
+  Its pulled quote takes the accent rather than the `--highlight` the Quote
+  *object* uses - the object sits on designed pages beside the logo, the
+  article rule sits in prose. In the default theme the two are the same blue;
+  a theme with a second colour is where they part.
 - **Slices stack flush; the gap above the footer is the footer's.** Every
   slice used to carry `margin-bottom: var(--s-8)`, which nobody had asked for
   and which drew a 56px stripe of the page's own paper between two white
@@ -519,8 +541,8 @@ half-done. Kept short.
     palette refuses and `stripDisallowed` would silently drop on save. It was
     doing exactly that for an article's breadcrumbs, feed and form.
 - **A bare `<figure>` carries the browser's own `1em 40px`.** That was what
-  held an article's lead image off both edges of its column and read as
-  "centred, and choked". Any figure this codebase adds needs its margin set.
+  held an article's lead image off both edges of its column and made it
+  look centred and cramped. Any figure this codebase adds needs its margin set.
 - **The bar said Bold when you pressed H2.** A heading *is* bold, so the
   browser answers yes to `queryCommandState('bold')` with the caret inside
   one - and since the heading button itself lit up for nothing, pressing H2
@@ -678,8 +700,8 @@ half-done. Kept short.
     (`scratchpad/reset-spacing.mjs`, kept only as a record) - slice margins to
     50, band padding to 56, card padding to 24, object spacing to nothing.
     Not a migration: a one-off on a database that lives on one laptop.
-- **Defaults are visible, and that is the whole point.** Mac's framing, worth
-  keeping: a normal user never touches these numbers, but they are *there* for
+- **Defaults are visible, and that is the whole point.** A normal user never
+  touches these numbers, but they are *there* for
   someone who knows what they are doing. Hiding them in a stylesheet serves
   neither - the base user gains nothing and the tweaker is stuck.
   - The **type scale** is the same argument, one screen further out. The nine
@@ -746,7 +768,7 @@ half-done. Kept short.
     `inter-latin-ext-400-normal.woff2` - and without a `unicode-range` those
     are the same declaration written twice, so half an uploaded family goes
     quietly dead. Saying it also means nothing is fetched until a page needs
-    it: Inter ships as latin (48 KB) and latin-ext (85 KB), and a Swedish page
+    it: Inter ships as latin (48 KB) and latin-ext (85 KB), and an English page
     asks for the first only. The ranges are a closed list, because the string
     goes straight into a stylesheet.
   - **A variable font is declared as its range**, `100 900` rather than `400`.
@@ -757,11 +779,11 @@ half-done. Kept short.
     where `normal` is the *style*, which is why a bare number is read first -
     and both are a select away from corrected.
   - **One family ships, not fourteen.** Redistributing a font in a public repo
-    makes Smartare Mat the distributor: Inter is OFL 1.1 and travels with its
-    licence, and one licence is one thing to get right. A company installing
-    this arrives with its own brand face anyway, and a picker listing
-    fourteen names with files behind one of them is thirteen promises the
-    install cannot keep.
+    makes whoever runs the site the distributor: Inter is OFL 1.1 and
+    travels with its licence, and one licence is one thing to get right. A
+    company installing this arrives with its own brand face anyway, and a
+    picker listing fourteen names with files behind one of them is thirteen
+    promises the install cannot keep.
 
 - **A table takes its colour from the palette, and none by default.** It used
   to force `background: var(--white)` from the stylesheet, which on any
@@ -847,7 +869,7 @@ half-done. Kept short.
 
   Deliberately parked until there is a real file to test against - guessing at
   poster behaviour without one is how you build the wrong thing twice.
-- **Solid icons.** Mac prefers solid over outlined for clarity. A self-contained
+- **Solid icons.** Solid reads more clearly than outlined. A self-contained
   pass over `src/views/icons.js`, which is one map of path data.
 - **Inline objects, and buttons in particular.** Two buttons side by side at
   the foot of a page is a normal thing to want, and today it is a 1 x 2 table
@@ -859,12 +881,13 @@ half-done. Kept short.
   property on the button - *sits beside the one before it* - so a run of them
   flows and everything else keeps behaving. `.b-button` is already a flex
   container that only ever holds one thing, which is most of the mechanism.
-  Mac's own framing, worth keeping: a corner case, worth pushing forward until
-  there is a page that actually needs it rather than one that merely could.
+  It is a corner case, worth pushing forward until there is a page that
+  actually needs it rather than one that merely could.
 - **Noticed and left alone** (September 2026), both older than the work that
   turned them up:
-  - The canvas draws a page on white, while the site draws pages on the
-    paper colour (`--paper`, #f0ede8) and only articles on white. A slice with
+  - The canvas draws a page on white, while the site draws pages on
+    `--page-bg` (the paper grey, #f5f5f5, in the default theme) and only
+    articles on white. A slice with
     no background reads a shade different in the editor from the site.
   - Below 1080px the rail becomes a strip whose icons sit in one row about
     600px wide, so the whole CMS scrolls sideways on a phone.
@@ -874,11 +897,10 @@ half-done. Kept short.
   - Cards ask for 340px images (`SIZES.card`) but draw 472px wide on a
     desktop, so their pictures are a little soft on a 2x screen.
   - In a narrow column a block's name tag sits behind its own tool row.
-- **Waiting on Mac:** link previews use the 800px q50 fallback. Whether they
-  deserve a larger JPG of their own is a question left on the sysadmin
-  write-up (the shared doc; `docs/server-express-no-nginx.md` is its copy).
-- **Waiting on the sysadmin:** where TLS ends in production, and with it
-  `TRUST_PROXY` and `HOST`. The write-up lays out the options.
+- **Undecided:** link previews use the 800px q50 fallback. Whether they
+  deserve a larger JPG of their own is still open.
+- **Up to whoever deploys it:** where TLS ends, and with it `TRUST_PROXY`
+  and `HOST`. `docs/deploying.md` lays out the options.
 
 ## Security, as it actually stands
 
@@ -901,14 +923,15 @@ running stack. Ordered by what would actually be reached first.
     forged `X-Real-IP` or `X-Forwarded-For` (probed again when nginx went,
     2026-09-21). Nothing about working on localhost changed.
   - **Fixed.** The default is off. Local work asks for it explicitly:
-    `AUTH_DISABLED=1 ./start.sh`.
-  - The real login flow works with no mail server, which is what made the
-    default safe to flip: with no `BREVO_API_KEY` the mail is written to
-    `data/outbox/` and the code is shown on the verification screen. That is
-    also a complete bypass - type an admin's address, read the code, sign in -
-    so the code is shown **only to a request from this machine**. From
-    anywhere else a mail-less install has no code on screen, and the operator
-    reads it off disk.
+    `AUTH_DISABLED=1 ./start.sh`. It signs in as `DEV_USER` when that is
+    set and as the first admin otherwise, so it names nobody by default.
+  - The one-time code works with no mail server, which is what made the
+    default safe to flip before passwords existed: with no `BREVO_API_KEY`
+    the mail is written to `data/outbox/` and the code is shown on the
+    verification screen. That is also a complete bypass - type an admin's
+    address, read the code, sign in - so the code is shown **only to a
+    request from this machine**. From anywhere else a mail-less install has
+    no code on screen, and the operator reads it off disk.
 - **Fixed: security headers on every HTML response**, in `html()` because
   that is the one door they all leave by. `script-src 'self'` with no
   `unsafe-inline` and no nonce, which is only possible because nothing here
@@ -934,18 +957,33 @@ running stack. Ordered by what would actually be reached first.
   anything is written into the web root under that name. Both doors ask -
   upload and replace. SVG is the one that cannot be matched on a fixed header,
   being XML, so it is matched on finding an `<svg` root near the start.
+- **Fixed: a fresh install owns no account it did not make.** It used to seed
+  its admin at `DEV_USER`, which defaulted to a real person's address - right
+  for the one site this was built for, wrong for a public repo, where every
+  install would come up owning an account whose mailbox belonged to someone
+  else. Of the three ways out (refuse to boot without `DEV_USER`, seed no
+  admin and ask on first run, default to an obvious placeholder), the second
+  was taken. Nothing seeds an admin now; until one exists the CMS sends
+  everyone to `/cms/setup`, which makes the first. It opens without asking
+  for a request from this machine, like the bypass, and from anywhere else
+  wants a token printed in the start-up banner and nowhere else - so a
+  server started on a network is not claimed by whoever finds it first.
+- **Fixed: sign-in no longer needs a mail service.** Users have a password
+  (`scrypt` from `node:crypto`, stored as `scrypt$N$r$p$salt$hash` so the
+  cost can rise later without stranding anyone; `src/lib/password.js`). How
+  people sign in is a Settings choice - password, password or a one-time
+  code, or the code alone - and a fresh install uses the password. An
+  existing install whose people have no passwords is kept on the code at
+  start, so upgrading locks nobody out, and Settings refuses passwords-only
+  from an admin who has none. Wrong guesses are counted in memory, five per
+  address and twenty per machine in fifteen minutes; memory is enough,
+  because a restart is not something an attacker gets to ask for and scrypt
+  already makes each guess slow. Everyone sets their own password on the
+  Account screen (`/cms/account`), which signs out their other sessions;
+  admins set anyone's under Users.
 
 Not fixed, because it is about how this ships rather than how it runs:
 
-- **A fresh install seeds its admin at `DEV_USER`, which defaults to Mac's
-  own address.** Right for this site - it *is* his - and wrong for a public
-  repo, where every install would come up owning an account whose mailbox
-  belongs to someone else. Not remotely exploitable: signing in needs a code
-  sent to that address, and the on-screen code is localhost-only. But an
-  installer would be signed in as "Mac Smoser" and have to notice. Three ways
-  out, and it is a product decision which: refuse to boot without `DEV_USER`
-  set, seed no admin and ask on first run, or default to something obviously
-  a placeholder.
 - **There is no TLS yet**, but the two protections that depend on it now
   switch themselves on. They used to read `SITE_URL`, which comes apart from
   reality in exactly the case that matters: put a certificate on a proxy and
@@ -974,9 +1012,13 @@ What held up, tested rather than assumed:
   a local path.
 - **Traversal is blocked** on `/media/`, `/assets/` and `/fonts/`, encoded or
   not.
-- **The OTP flow is sound**: `crypto.randomInt` codes, `timingSafeEqual`
-  comparison, a per-token attempt cap, no user enumeration in the response,
-  and the code is only ever echoed back when no mail key is configured.
+- **The one-time code flow is sound**: `crypto.randomInt` codes,
+  `timingSafeEqual` comparison, a per-token attempt cap, no user enumeration
+  in the response, and the code is only ever echoed back when no mail key is
+  configured.
+- **So is the password**: an unknown address costs the same scrypt and gets
+  the same answer as a wrong password, so the form cannot be used to find out
+  who has an account.
 - **Sessions**: 32 random bytes, `HttpOnly`, `SameSite=Lax`, `Secure` behind
   TLS. There are no CSRF tokens, and `Lax` is what stands in for them - no state changes on GET, so
   a cross-site POST arrives without the cookie. Worth revisiting if a
@@ -1002,7 +1044,7 @@ What held up, tested rather than assumed:
 - **Multi-language content.** Called a hairball, parked. The front-end language
   switch was removed rather than left as dead scaffolding. Parked again after
   a proper look, and for a better reason than "it is a lot of work".
-  - **Mac's argument, which is the one that settles it.** A translation is not
+  - **The argument that settles it.** A translation is not
     what a second market needs. A landing page aimed at a Norwegian has to
     sell differently to one aimed at a Swede - different order, different
     emphasis, sometimes a different offer. It is easy to think a locale is a
@@ -1023,8 +1065,7 @@ What held up, tested rather than assumed:
     Which is exactly the property a marketing site turns out not to want.
   - **The editor gets a language switch, not a tab per page.** Flip it and the
     canvas redraws with that language's words and nothing else changed. That
-    is the intuitive thing Mac was reaching for, done at the level where it is
-    cheap.
+    is the intuitive thing to reach for, done at the level where it is cheap.
   - The mechanical part is small: `OBJECTS` already lists each kind's
     `fields`, so a `translatable` set beside it, a locale argument through
     `normalizeProps` and `renderObject`, and a fallback to the default
@@ -1037,8 +1078,12 @@ What held up, tested rather than assumed:
     the weeks go, and none of it is made easier by choosing page-per-locale.
   - One deliberate escape hatch: a slice that belongs only to some locales,
     for the cases where the layout genuinely differs rather than the words.
-- **A language picker in the CMS.** The dictionary supports it; there is only
-  one language shipped, so a one-option selector would be noise.
+- **A language picker in the CMS, or a string dictionary.** The CMS and the
+  public site are both English, with their strings inline in the views. A
+  dictionary (`src/i18n/en.js`, with `t()` in `src/lib/i18n.js`) was
+  written for this once and deleted on 2026-09-22: nothing had imported it
+  since the article form moved onto the canvas, and with one language a
+  one-option selector would be noise.
 - **A code editor for page types.** The goal is right and worth building one
   day: making a *new* page type from the CMS rather than only choosing among
   the three. Pasting server-side source into a `<textarea>` is not the way to
@@ -1065,11 +1110,6 @@ What held up, tested rather than assumed:
 
 ## Half-done
 
-- **Interface strings.** `src/i18n/en.js` is complete (273 keys) and `t()` is
-  in place, but nothing reads from it any more: the last import went when the
-  article form moved onto the canvas (07d687e). Every CMS view holds
-  literals, scheduling included. Finish by replacing them file by file — each
-  file is independently safe to convert.
 - **Redundant field labels.** Several forms label a field *and* repeat it in
   the placeholder. Worth a pass, but not mechanical: some labels earn their
   place and some do not.
@@ -1188,7 +1228,10 @@ What held up, tested rather than assumed:
   subject chips, which only draw for a category carrying a published article -
   and the run never gave its own article one. It passed for a year on a
   developer's populated database and failed the day the articles table was
-  empty. It files its own article under its own subject now.
+  empty. It files its own article under its own subject now - but the article
+  is live by then, so the filing is held as a draft and the chips still have
+  nothing published to count. Not fixed yet: publishing after filing should
+  do it.
 
 - **A disabled control is a hole in the canvas.** The field previews on the
   form canvas are real `<input disabled>` elements, and a disabled control
@@ -1263,18 +1306,23 @@ What held up, tested rather than assumed:
     regional indicator pair is the ISO code shifted into its own block - so
     the two cannot disagree. Windows and most Linux ship no flag font and
     render the pair as its two letters, which is why the option says the
-    country's *name*: "SE Sverige (+46)" is a fallback, "SE SE (+46)" would
-    read as a bug.
+    country's *name*: "SE Sweden (+46)" is a fallback, "SE SE (+46)" would
+    read as a bug. The names are English, like every other string the public
+    site renders.
   - **In the row, the number has the floor and the select gives way.** A
-    select sizes itself to the country it is showing, and "Bosnien och
-    Hercegovina (+387)" in a half-width column left about forty pixels to type
+    select sizes itself to the country it is showing, and "Bosnia and
+    Herzegovina (+387)" in a half-width column left about forty pixels to type
     a phone number into. The number claims 9em first. The cost is that a long
     name clips before its prefix does, on a narrow screen.
-  - **Israel is deliberately not in the list**, at Mac's instruction. There is
-    a test asserting its absence so that adding it back has to be a decision
-    rather than a tidy-up.
+  - **Israel is deliberately not in the list.** That is the maintainer's
+    decision, not a gap, and not something to add back as a fix. There is a
+    test asserting its absence so that adding it back has to be a decision
+    rather than a tidy-up. A number there can still be typed in full, since
+    an explicit `+` or `00` overrides the select.
   - Which country a new field starts on is `site_country` in Settings, not a
-    constant in the editor - same rule as everything else site-specific.
+    constant in the editor - same rule as everything else site-specific. The
+    same setting decides how a bare number is read at sign-in and on the Users
+    screen, which used to assume Sweden. A fresh install starts on GB.
 - **A slice is not an object, and the drop handlers had to be told.** A
   column holds objects; a slice holds columns. The column-level and cell-level
   drops were written for objects only - a branch for a palette object, a
@@ -1322,7 +1370,7 @@ What held up, tested rather than assumed:
     worse: **a warning is not a manual.** It named a button that is not in the
     dialogue - and on a page that has never been published is not on the
     screen at all - at the moment somebody is deciding whether to cancel.
-    Mac's call, and right. Both say one line now - "This action will replace
+    Both say one line now - "This action will replace
     all slices and content on this page", and its Clear all slices twin - and
     the same line whatever is on the page. It describes what the action does,
     not what this particular page has to lose, and it replaces the page
@@ -1347,11 +1395,11 @@ What held up, tested rather than assumed:
 - **A page's address is a parent and a slug, never a typed path.** The
   breadcrumb is built by walking the permalink and looking up a page at each
   accumulated path, so the whole trail rested on whatever somebody had typed
-  into one free-text box: `/varumarken/x` could exist while `/varumarken` did
+  into one free-text box: `/brands/x` could exist while `/brands` did
   not, and the crumb then fell back to the raw slug with a link to a 404.
-  Renaming a parent stranded its children with nothing said. Mac's question,
-  and his own objection settled the shape of the answer - a parent field
-  alone contains nothing while the permalink box sits next to it.
+  Renaming a parent stranded its children with nothing said. What settled the
+  shape of the answer was an objection: a parent field alone contains nothing
+  while the permalink box sits next to it.
   - **Articles had already solved this**, which is what made it obviously
     right: `articles.parent_id` is a real foreign key, the address is composed
     from parent and slug, and the article screen has *no permalink field at
@@ -1380,8 +1428,8 @@ What held up, tested rather than assumed:
     no-op. It was only simple because it ran while every page was still a
     single segment; it says so, and reports anything it could not resolve.
   - Two things this touched that were easy to miss: `create` needs `'/'` as an
-    explicit special case or a fresh seed renames the landing page to
-    `/smartare-mat`, and `duplicate` composed from a string, so a copy of a
+    explicit special case or a fresh seed moves the landing page off `/` to
+    a slug of its title, and `duplicate` composed from a string, so a copy of a
     nested page jumped to the root.
   - **Two routes save a page, and only one of them was taught.** The Pages
     panel posts a form to `/cms/pages/:id/meta`; the editor autosaves JSON to
@@ -1407,8 +1455,8 @@ What held up, tested rather than assumed:
   - **`includes` on a name matches more than the thing named.** Every menu
     card lists every page title in its link picker, so a test page called
     `E2E-x menysida` made `chunk.includes('E2E-x meny')` true on *the first
-    card on the screen* - Huvudmeny. The test then saved over it, published
-    it, and deleted it, three runs in a row, leaving the site with no main
+    card on the screen* - the site's main menu. The test then saved over it,
+    published it, and deleted it, three runs in a row, leaving the site with no main
     navigation. Both lookups match `data-menu-name value="…"` now and anchor
     the id to the start of the card.
   - **Cleanup deletes by name, never by a guessed id.** The list of ids to
@@ -1447,8 +1495,8 @@ What held up, tested rather than assumed:
   `published_at || created_at`, which never moves when you work on a page - so
   the one question the list is opened to answer, "what was I last on", was the
   one it could not. The publish state is still in the Status pill, which is
-  where it reads better anyway. Mac's call by implication: both the sort he
-  asked for and the fallback he offered were about last-edited.
+  where it reads better anyway. Both the sort that was asked for and the
+  fallback that was offered were about last-edited.
 - **A near date is said in words.** Today gets a time of day, yesterday gets a
   name, anything older keeps its date. Every page edited today carrying the
   same string is exactly where a plain date stops distinguishing. Compared by
@@ -1488,8 +1536,8 @@ What held up, tested rather than assumed:
     checkbox stays a boolean.
 - **An article's date can be set** (2026-09-22), under Published in its
   details. `published_at` used to be written once, on the first publish, and
-  never again. Mac's case is old news written in now, which has to land in
-  the feeds where it happened rather than on top of them.
+  never again. The case is old news written in after the fact, which has to
+  land in the feeds where it happened rather than on top of them.
   - **Pending like the title.** Cards print the date and feeds sort by it, so
     on a live article a new one waits in `draft_meta` for Publish. Publish
     takes the pending date, else the one the article has, else today -
@@ -1513,8 +1561,8 @@ What held up, tested rather than assumed:
   and nothing else, so everything that was not blocks went live as it was
   typed: a title on a live page reached the public `<h1>`, the `<title>` and
   the meta description before the keystroke finished, and Publish had nothing
-  left to do about it. Mac's scenario for it, and the right one - somebody
-  puts a placeholder in a field on a live page and it is published under
+  left to do about it. The scenario that matters: somebody puts a
+  placeholder in a field on a live page and it is published under
   their name without their knowing.
   - `draft_meta`, one JSON column per table, holds what is pending. Publish
     applies it and empties it; Discard throws it away with the blocks;
@@ -1631,16 +1679,18 @@ What held up, tested rather than assumed:
   of it up - so the "line" read as a smudge under the word. A pseudo-element
   stays straight whatever the corner does. Worth remembering for any rule that
   draws an edge on something rounded.
-- **Selection is marked in the accent, not the brand yellow.** Which page you
+- **Selection is marked in the accent, not the highlight.** Which page you
   are on is said in the colour the site says everything else interactive in,
   in both the main menu and the sub menu - the same meaning should not change
   colour with the bar it is in. Read from `--c-accent`, which the theme screen
-  writes, so recolouring the accent moves the markers with it. The cost is
-  contrast: against the black topbar the accent is about 4.6:1 where the
-  yellow was about 14:1, so it clears the 3:1 a non-text indicator needs with
-  less room to spare.
+  writes, so recolouring the accent moves the markers with it. The cost, when
+  this was decided on a black top bar, was contrast: the accent was about
+  4.6:1 against it where the old yellow mark was about 14:1. The default bar
+  is white now and the accent (#357abb) sits at about 4.5:1 on it - still
+  clear of the 3:1 a non-text indicator needs, with less room to spare than
+  a theme might want.
 - **An image chooses its corners.** Every image was rounded by a fixed rule
-  in blocks.css, and some artwork is not allowed to be - Stacky's logo was
+  in blocks.css, and some artwork is not allowed to be - a partner's logo was
   the case that raised it: its guidelines own its shape, and on an opaque
   file the rounding shows. `radius` on the Image object, on the scale a
   card already uses (Square, Slight, Rounded, Very rounded), so a name
@@ -1687,34 +1737,44 @@ What held up, tested rather than assumed:
     so it is right before cms.js runs.
   - **The profile travels.** `docs/dark-mode-profile.md` holds the same
     colours without this codebase's names - role, hex, OKLCH and contrast -
-    for Mac's other projects, and an identical copy is installed as the
-    personal Claude Code skill `~/.claude/skills/dark-mode-profile`. Change a
-    dark token here and both copies want the same change.
-  - Each logo is in the page twice and the appearance picks one; the dark
-    lettering of the wordmark vanishes on a dark ground. Pictures in the
-    library and the pickers sit on Photoshop's medium grey (#535353) in dark
-    mode, so black artwork on nothing is still visible.
+    so they can be used elsewhere. Change a dark token here and that copy
+    wants the same change.
+  - The CMS's own mark (`src/views/brand.js`) is drawn inline in
+    `currentColor`, so it follows light and dark with one drawing rather than
+    two image files - a dark wordmark on a dark ground is what two files were
+    working around. Pictures in the library and the pickers sit on
+    Photoshop's medium grey (#535353) in dark mode, so black artwork on
+    nothing is still visible.
   - Found beside it: the title column of a list never truncated, so the
     dashboard's tables were wider than their cards and the views column sat
     off the edge. Invisible on white, obvious on a dark card. That column's
     header was also still Swedish.
-- New interface wording goes in the dictionary once a file is converted.
-  Nothing reads it at the moment (see Half-done), so until then a string sits
-  beside its neighbours.
+- New interface wording is English and sits inline beside its neighbours, in
+  the CMS and on the public site alike. There is no dictionary to add it to
+  (see Deliberately not built).
 
 ## Running it
 
     ./start.sh          # Node on :8080 by hand; installs the packages first time
     AUTH_DISABLED=1 ./start.sh        # ...without the login, from this machine only
+    THEME_DIR=/srv/my-theme ./start.sh  # ...serving a theme's files over www/assets
     ./scripts/autostart.sh install    # keep it running across logins
-    npm test            # 165 unit tests, the Express app's own among them
-    npm run test:e2e    # 132 checks against a running stack, signing in for real
+    npm test            # 201 unit tests, the Express app's own among them
+    npm run test:e2e    # 131 checks against a running stack, signing in for real
     SCHEDULE_WAIT=1 npm run test:e2e  # ...plus a minute's wait for the publishing clock
     npm run test:clean  # clear leftovers from an interrupted e2e run
     npm run reset       # wipe and re-seed (refuses while the server is up)
     node scripts/image-backfill.mjs   # convert what is missing, add missing fallbacks
 
+A fresh database has no admin. The first visit to the CMS goes to
+`/cms/setup`, which makes one: it opens as it is on this machine, and from
+anywhere else wants the token the start-up banner prints. One e2e check, "the
+feed offers its subject chips", fails against an empty database, for the
+reason under Conventions ("A test that needs a fixture must make it"); it did
+before the 2026-09-22 changes too.
+
 Root `assets/` is scratch: screen grabs, colour picks and backups dropped in
-while something is being talked through. Only `assets/site-structure.md` (the
-spec) and `assets/demowww/` (the original demo site) are tracked; `.gitignore`
-leaves everything else there on disk and out of git.
+while something is being talked through, and `.gitignore` leaves it on disk
+and out of git. The ignore file still makes exceptions for
+`assets/site-structure.md` (the spec) and `assets/demowww/` (the original
+demo site); neither came over with this repo.

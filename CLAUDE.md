@@ -7,8 +7,10 @@ slice owns the layout (1–4 columns, split, gap, width, background band) and
 that draws content through `www/assets/blocks.css` — the same stylesheet the
 public site uses — so the editor and the site cannot drift apart.
 
-Run it with `./start.sh` (Node 22.5+; it runs `npm ci` itself when needed) and
-test it with `npm test`. `NOTES.md` is the long-form record of why things are
+Run it with `./start.sh` (Node 22.5+; it runs `npm ci` itself when needed) -
+a fresh database prints a `/cms/setup` address for making the first admin, and
+`AUTH_DISABLED=1` skips sign-in from this machine - and test it with
+`npm test`. `NOTES.md` is the long-form record of why things are
 the way they are; read the relevant section before changing a design decision.
 
 ## Where this came from
@@ -24,7 +26,9 @@ this repo with its own theme — item 4 below.
 - **Ask before adding an npm package.** Three is the whole dependency list.
   Node's own library covers more than people expect (`node:sqlite`,
   `node:crypto` for hashing).
-- **The CMS interface is English.** The site it builds is language-independent.
+- **The CMS interface is English, and so are the site's own words** ("Read
+  more", "Page not found"). What an author writes is in whatever language
+  they write it in.
 - **Stored content stays semantic.** Page JSON is `{kind, props, style}` —
   intent, never CSS. Presentation lives in `blocks.css`.
 - **Two token sets, deliberately separate.** `cms-tokens.css` (`--ui-*`) is the
@@ -38,31 +42,25 @@ this repo with its own theme — item 4 below.
 
 ## What to do next
 
-The code still carries the site it was built for. In rough order:
+The five-point list this repo was lifted with is done: branding cut, password
+sign-in with a first-run admin, English throughout, a neutral default theme
+with `THEME_DIR` for a site's own, and an installer README with the AGPL.
+What is left:
 
-1. **Cut the branding.** `src/db/seed.js` (page tree, site name, address),
-   `src/views/cms/layout.js` and `src/views/auth.js` (logos),
-   `src/config.js` (mail defaults), `src/lib/mail.js` (sender name, footer),
-   `src/server.js` (startup banner), `package.json`, and the
-   `www/assets/logo-smartaremat*.svg` files.
-2. **Password sign-in, and a first-run admin.** Today's sign-in is a one-time
-   code by email or SMS, which needs a Brevo key a fresh install will not have.
-   The `users` table has no password column; `scrypt` from `node:crypto` needs
-   no new package. Keep the one-time code as an option in Settings for sites
-   that want it, and replace the seeded admin with a first-run screen.
-3. **The language seam.** About fifteen Swedish strings on the public side
-   (`src/views/render.js`, `src/routes/site.js`, `src/views/gate.js`), the
-   `?kategori=` query parameter, and the `sv-SE` date defaults in
-   `src/lib/util.js`. `src/i18n/en.js` is a 279-key dictionary from an earlier
-   pass that nothing imports — the obvious place to start.
-4. **A neutral default theme.** The brand lives in `www/assets/tokens.css` and
-   `site.css`. The Theme screen already emits colours, fonts, type scale and
-   measures as CSS variables from the database (`src/lib/theme.js`), so a fair
-   amount of "the look" is data already. Making the remaining pair swappable is
-   what turns this into "same CMS, different site".
-5. **Before it goes public:** an English README for installers (the current
-   `README.md` is Swedish and written for one site), a licence, and a pass over
-   `NOTES.md`, which names the client and quotes design arguments verbatim.
+1. **Make smartaremat.se a deployment of this repo.** Its `tokens.css`,
+   `site.css`, logo and favicon go in a theme folder of its own, served with
+   `THEME_DIR`. Two things will not carry over by themselves: its public
+   strings were Swedish and this repo's are English only now (a small
+   dictionary would be the way back, if it wants them), and its menus are
+   named `Huvudmeny`/`Extramenu` - the site finds the secondary menu by name
+   (`EXTRA_MENU` in `src/db/seed.js`) but falls back to the first non-main
+   menu, so it should still work. Its users have no passwords yet, so on
+   first start it stays on one-time codes (`keepCodeForOldInstalls`).
+2. **The e2e check "the feed offers its subject chips" fails on an empty
+   database**, and did before the list above. It files a live article under a
+   category, which is held as a draft, so no published article carries a
+   category and the chip row has nothing to offer. Publishing after filing
+   should fix it.
 
 ## Not in this repo
 

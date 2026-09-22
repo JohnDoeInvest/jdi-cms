@@ -8,7 +8,7 @@ description: Dark-mode colour profile for application interfaces - neutral greys
 Neutral greys measured pixel by pixel from Adobe Photoshop's dark
 interface, plus the colours Photoshop's greys lack (accent, error,
 warning, success), lifted until they read on a dark panel. First used in
-the Smartare Mat CMS, September 2026.
+the Slice CMS, September 2026.
 
 Every colour has one **role**. Map a light UI onto the roles, not onto the
 nearest grey: the same light white is a panel in one place and the page
