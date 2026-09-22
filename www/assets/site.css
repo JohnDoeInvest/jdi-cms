@@ -1,5 +1,5 @@
 /* ===================================================================
-   Smartare Mat - public site
+   Public site
    =================================================================== */
 
 
@@ -68,6 +68,11 @@ p:last-child { margin-bottom: 0; }
 
 .topbar__logo { grid-area: logo; align-self: center; }
 .topbar__logo img { height: 56px; width: auto; }
+/* What stands in for a logo until one is set. */
+.site-name {
+  display: block; font-family: var(--font-heading); font-size: var(--fs-lg);
+  font-weight: 700; letter-spacing: -.02em; line-height: 1.1; color: var(--white);
+}
 
 .topbar__extra { grid-area: extra; justify-self: end; display: flex; align-items: center; gap: var(--s-5); }
 .extramenu { display: flex; gap: var(--s-5); list-style: none; margin: 0; padding: 0; }

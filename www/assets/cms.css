@@ -1,5 +1,5 @@
 /* ===================================================================
-   Smartare Mat - CMS
+   Slice - CMS
    Layout: cmsTop (50px) + cmsLeft (282px) + cmsCenter + cmsRight (313px)
    =================================================================== */
 
@@ -100,8 +100,11 @@ hr.rule { border: 0; border-top: 1px solid var(--ui-line); margin: var(--ui-s-5)
   display: flex; align-items: center; gap: var(--ui-s-3);
   padding: 0 16px; height: 32px; margin-bottom: var(--ui-s-6);
 }
-.cms-left__mark { width: 32px; height: 32px; flex: 0 0 32px; }
-.cms-left__wordmark { height: 30px; width: auto; opacity: 0; transition: opacity .12s var(--ui-ease); }
+.cms-left__mark { width: 32px; height: 32px; flex: 0 0 32px; color: var(--ui-ink); }
+.cms-left__wordmark {
+  font-size: var(--ui-fs-lg); font-weight: 700; letter-spacing: -.02em; color: var(--ui-ink);
+  opacity: 0; transition: opacity .12s var(--ui-ease);
+}
 
 /* Tight on purpose. The rail carries fifteen rows and four separators, and a
    13" screen plus the browser's own status popover leaves less room than that
@@ -140,14 +143,6 @@ hr.rule { border: 0; border-top: 1px solid var(--ui-line); margin: var(--ui-s-5)
 :root[data-appearance-choice="light"] .appearance-icon--light,
 :root[data-appearance-choice="dark"] .appearance-icon--dark { display: grid; }
 
-/* A wordmark in dark letters vanishes on a dark ground, so each logo is in
-   the page twice and the appearance decides which one shows. */
-.cms-left__wordmark--for-dark, .auth__logo-img--for-dark { display: none; }
-:root[data-appearance="dark"] .cms-left__wordmark--for-light,
-:root[data-appearance="dark"] .auth__logo-img--for-light { display: none; }
-:root[data-appearance="dark"] .cms-left__wordmark--for-dark,
-:root[data-appearance="dark"] .auth__logo-img--for-dark { display: block; }
-
 /* Signed-in identity lives at the foot of the rail, not in a separate bar. */
 .cms-account { display: flex; align-items: center; gap: 2px; }
 .cms-account__user {
@@ -181,9 +176,6 @@ hr.rule { border: 0; border-top: 1px solid var(--ui-line); margin: var(--ui-s-5)
 .cms-left:hover .cms-left__wordmark,
 .cms-left:focus-within .cms-left__wordmark,
 .cms[data-nav="pinned"] .cms-left__wordmark { opacity: 1; transition-delay: .04s; }
-.cms-left:hover .cms-left__mark,
-.cms-left:focus-within .cms-left__mark,
-.cms[data-nav="pinned"] .cms-left__mark { display: none; }
 
 /* --- cmsCenter / cmsRight --- */
 /* The centre pane is a column: content scrolls, actions sit under it.
@@ -826,8 +818,11 @@ details[open] > summary > svg { transform: rotate(90deg); }
 body.auth {
   min-height: 100vh; display: grid; place-items: center; background: var(--ui-paper); padding: var(--ui-s-5);
 }
-.auth__logo { position: fixed; top: 30px; left: 30px; }
-.auth__logo img { height: 46px; width: auto; }
+.auth__logo {
+  position: fixed; top: 30px; left: 30px;
+  display: flex; align-items: center; gap: var(--ui-s-2); color: var(--ui-ink);
+}
+.auth__logo .brand__name { font-size: var(--ui-fs-xl); font-weight: 700; letter-spacing: -.02em; }
 .auth__dialog {
   width: min(400px, 100%); background: var(--ui-white); border-radius: var(--ui-radius-lg);
   box-shadow: var(--ui-shadow-lg); padding: var(--ui-s-7) var(--ui-s-6);
@@ -876,8 +871,7 @@ body.auth {
     padding: var(--ui-s-3) var(--ui-s-4); border-right: 0; border-bottom: 1px solid var(--ui-edge);
   }
   .cms-left__logo { padding: 0; margin-bottom: 0; }
-  .cms-left__mark, .cms[data-nav="pinned"] .cms-left__mark { display: block; }
-  .cms-left__wordmark, :root[data-appearance="dark"] .cms-left__wordmark { display: none; }
+  .cms-left__wordmark { display: none; }
   .cms-nav { grid-auto-flow: column; grid-auto-columns: max-content; overflow-x: auto; padding: 0; gap: 4px; }
   .cms-nav__label, .cms[data-nav="pinned"] .cms-nav__label { display: none; }
   .cms-nav__sep, .cms-nav__kbd { display: none; }

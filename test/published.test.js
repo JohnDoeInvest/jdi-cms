@@ -14,7 +14,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'smartaremat-published-'));
+const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'slice-published-'));
 process.env.DB_PATH = path.join(dir, 'cms.db');
 process.env.AUTH_DISABLED = '1';
 const { config } = await import('../src/config.js');

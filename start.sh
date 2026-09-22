@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Start Smartare Mat: one Node server on :8080, straight to the network.
+# Start Slice: one Node server on :8080, straight to the network.
 set -euo pipefail
 cd "$(dirname "$0")"
 

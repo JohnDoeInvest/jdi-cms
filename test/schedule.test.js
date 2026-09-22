@@ -12,7 +12,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'smartaremat-schedule-'));
+const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'slice-schedule-'));
 process.env.DB_PATH = path.join(dir, 'cms.db');
 const { pages, articles, categories, publishDue, draftView } = await import('../src/models.js');
 const { all, get } = await import('../src/db/index.js');

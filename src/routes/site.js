@@ -17,6 +17,7 @@ import { currentUser } from '../lib/auth.js';
 import { isUnlocked, passwordMatches, unlockCookie } from '../lib/gate.js';
 import { passwordGate } from '../views/gate.js';
 import * as settings from '../lib/settings.js';
+import { EXTRA_MENU } from '../db/seed.js';
 
 /* ---------------------------------------------------------- page context */
 
@@ -29,7 +30,7 @@ const publishedTree = (menu) => (menu?.publishedTree?.length ? menu.publishedTre
  * bar never silently loses its links.
  */
 function extraMenu() {
-  const byName = menus.byName('Extramenu');
+  const byName = menus.byName(EXTRA_MENU);
   if (byName) return publishedTree(byName);
   const fallback = menus.allHydrated().find((m) => !m.is_main && m.publishedTree.length);
   return publishedTree(fallback);
@@ -402,16 +403,20 @@ export function registerSiteRoutes(router) {
       return `${field.props.label || name}: ${values[name] || '—'}`;
     }).join('\n');
 
+    /* With no recipient anywhere the message is still kept - it is in the
+       CMS's messages either way - there is just nobody to mail it to. */
     let delivered = false;
-    try {
-      const result = await sendMail({
-        to: recipient,
-        ...(replyTo ? { replyTo } : {}),
-        ...contactEmail({ subject, from: replyTo || 'okänd avsändare', message: body, page: back }),
-      });
-      delivered = !!result.delivered;
-    } catch (err) {
-      console.error('  [form] delivery failed:', err.message);
+    if (recipient) {
+      try {
+        const result = await sendMail({
+          to: recipient,
+          ...(replyTo ? { replyTo } : {}),
+          ...contactEmail({ subject, from: replyTo || 'okänd avsändare', message: body, page: back }),
+        });
+        delivered = !!result.delivered;
+      } catch (err) {
+        console.error('  [form] delivery failed:', err.message);
+      }
     }
     messages.create({ subject, from_email: replyTo, body, page: back, form_id: form.id, delivered });
 

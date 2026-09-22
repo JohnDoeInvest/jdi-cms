@@ -1,5 +1,5 @@
 /* ===================================================================
-   Smartare Mat CMS - appearance.
+   Slice CMS - appearance.
 
    Light, dark, or whatever the system is set to. Loaded in the head and
    not deferred, so the root knows which before the first paint and a dark

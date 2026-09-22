@@ -95,11 +95,13 @@ export function siteLayout({
   const lang = ctx?.lang || settings.site_language || config.defaultLang;
   // Avoid "Site name | Site name" on the landing page.
   const fullTitle = !title || title === siteName ? siteName : `${title} | ${siteName}`;
-  const logo = settings.logoUrl || '/assets/logo-smartaremat-light.svg';
   // A raster logo is WebP, so it comes with its fallback; an SVG is just itself.
+  // With no logo set the site's name stands in, set in the site's own type.
   const logoImg = settings.logoMedia?.fallback_filename
     ? pictureHtml(settings.logoMedia, { img: `alt="${esc(siteName)}"` })
-    : `<img src="${esc(logo)}" alt="${esc(siteName)}">`;
+    : settings.logoUrl
+      ? `<img src="${esc(settings.logoUrl)}" alt="${esc(siteName)}">`
+      : `<span class="site-name">${esc(siteName)}</span>`;
   const favicon = settings.faviconUrl || '/assets/favicon.svg';
   const baseUrl = settings.site_url || config.siteUrl;
   const siteTheme = theme();

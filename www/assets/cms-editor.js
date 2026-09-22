@@ -1,5 +1,5 @@
 /* ===================================================================
-   Smartare Mat CMS — page editor canvas.
+   Slice CMS — page editor canvas.
 
    The canvas renders content the way the site will render it, using the
    same blocks.css rules, and edits it in place. Anything that is not the

@@ -12,7 +12,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'smartaremat-hidden-'));
+const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'slice-hidden-'));
 process.env.DB_PATH = path.join(dir, 'cms.db');
 const { pages, forms, messages } = await import('../src/models.js');
 const { createApp } = await import('../src/app.js');

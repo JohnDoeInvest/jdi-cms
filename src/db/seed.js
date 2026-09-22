@@ -1,18 +1,16 @@
 import { config } from '../config.js';
 import { db, get, run, setting } from './index.js';
-import fs from 'node:fs';
-import path from 'node:path';
-import { pages, menus, categories, users, media } from '../models.js';
-import { storeUpload } from '../lib/media.js';
+import { pages, menus, categories, users } from '../models.js';
 import * as settings from '../lib/settings.js';
 import { newId } from '../lib/objects.js';
 
 /**
  * Structural seed only.
  *
- * This creates the scaffolding - the admin user, the two menus, news
- * categories and the ten top-level pages - and deliberately leaves all page
- * content empty. Content is authored in the CMS.
+ * This creates the scaffolding - the admin user, the two menus, a news
+ * category and four top-level pages - and deliberately leaves all page
+ * content empty. Content is authored in the CMS, and the pages are only a
+ * starting shape: rename them, move them, delete them.
  *
  * Neither slices nor page templates are seeded. They were starter content written against the old
  * model, and two of them ("Two columns", "Three columns") only existed because
@@ -22,25 +20,22 @@ import { newId } from '../lib/objects.js';
 
 const obj = (kind, props = {}, extra = {}) => ({ id: newId(), kind, props, style: { margin: {}, padding: {} }, ...extra });
 
-/* Flow 1 - the ten top-level pages, published but empty. A page type is the
-   page's own property; nothing needs to exist first for it to have one. */
+/* The top-level pages, published but empty. A page type is the page's own
+   property; nothing needs to exist first for it to have one. `news` marks the
+   page new articles are filed under. */
 const TOP_PAGES = [
-  { title: 'Smartare Mat', permalink: '/', pageType: 'landing', main: false },
-  { title: 'Smartare Mat', permalink: '/smartare-mat', main: true },
-  { title: 'Varumärken', permalink: '/varumarken', main: true },
-  { title: 'Produktion & Utveckling', permalink: '/produktion-utveckling', main: true },
-  { title: 'Kunskap', permalink: '/kunskap', main: true },
-  { title: 'Nyheter', permalink: '/nyheter', main: true },
-  { title: 'Investerare', permalink: '/investerare', extra: true },
-  { title: 'Om oss', permalink: '/om-oss', extra: true },
-  { title: 'Jobb & karriär', permalink: '/jobb-karriar', extra: true },
-  { title: 'Kontakt', permalink: '/kontakt', extra: true },
+  { title: 'Home', permalink: '/', pageType: 'landing' },
+  { title: 'About', permalink: '/about', main: true },
+  { title: 'News', permalink: '/news', main: true, news: true },
+  { title: 'Contact', permalink: '/contact', extra: true },
 ];
 
-const NEWS_CATEGORIES = [
-  'Nyheter', 'Företaget', 'Varumärken', 'Kunder & samarbeten',
-  'Produktion', 'Forskning', 'Människor', 'Mantorp & regionen', 'Investerare',
-];
+const NEWS_CATEGORIES = ['News'];
+
+/* By name, because the site finds its secondary menu by name - see
+   extraMenu() in src/routes/site.js. */
+export const MAIN_MENU = 'Main menu';
+export const EXTRA_MENU = 'Secondary menu';
 
 export async function seed({ force = false } = {}) {
   if (!force && setting.get('seeded')) return false;
@@ -49,10 +44,9 @@ export async function seed({ force = false } = {}) {
   let admin = users.byEmail(config.devUser);
   if (!admin) {
     admin = users.create({
-      full_name: 'Mac Smoser',
+      full_name: 'Admin',
       email: config.devUser,
       role: 'admin',
-      country: 'SE',
     });
   } else if (admin.role !== 'admin') {
     admin = users.update(admin.id, { role: 'admin' });
@@ -88,57 +82,27 @@ export async function seed({ force = false } = {}) {
   /* --- menus -------------------------------------------------------- */
   const node = (label, href, pageId) => ({ label, href, pageId, children: [] });
 
-  if (!menus.byName('Huvudmeny')) {
+  if (!menus.byName(MAIN_MENU)) {
     const tree = created.filter((c) => c.main).map((c) => node(c.title, c.permalink, c.page.id));
-    const menu = menus.create('Huvudmeny', tree);
+    const menu = menus.create(MAIN_MENU, tree);
     menus.setMain(menu.id);
     menus.publish(menu.id);
   }
-  if (!menus.byName('Extramenu')) {
+  if (!menus.byName(EXTRA_MENU)) {
     const tree = created.filter((c) => c.extra).map((c) => node(c.title, c.permalink, c.page.id));
-    const menu = menus.create('Extramenu', tree);
+    const menu = menus.create(EXTRA_MENU, tree);
     menus.publish(menu.id);
   }
 
   /* --- site settings ------------------------------------------------
-     Registers the bundled logo through the media library, exactly as an
-     upload would, then points the logo setting at it. Everything else a
-     project needs is editable under Settings. */
-  if (!settings.get('logo_media')) {
-    const logo = await adoptAsset('logo-smartaremat-light.svg', 'image/svg+xml', admin.id);
-    if (logo) settings.set('logo_media', logo.id);
-  }
-  if (!settings.get('logo_dark_media')) {
-    const logoDark = await adoptAsset('logo-smartaremat.svg', 'image/svg+xml', admin.id);
-    if (logoDark) settings.set('logo_dark_media', logoDark.id);
-  }
-  settings.set('site_name', 'Smartare Mat');
-  settings.set('site_language', 'sv');
-  settings.set('contact_email', 'info@smartaremat.se');
-  settings.set('footer_note', 'Smartare Mat i Sverige AB (publ)');
-  settings.set('footer_text', 'Magasinsvägen 42, 595 57 Mantorp\n0142-61 15 90\ninfo@smartaremat.se');
-  settings.set('social_links', [
-    { label: 'LinkedIn', url: 'https://www.linkedin.com/company/smartare-mat/' },
-    { label: 'Instagram', url: 'https://www.instagram.com/stackysofficial' },
-  ]);
+     Only where articles go. Name, logo, footer and the rest start from their
+     defaults in src/lib/settings.js - with no logo the site shows its name -
+     and are made the site's own under Settings. */
+  const news = created.find((c) => c.news);
+  if (news && !settings.get('article_parent')) settings.set('article_parent', news.page.id);
 
   setting.set('seeded', '1');
   return true;
-}
-
-/**
- * Copy a file bundled in www/assets into the media library so it behaves like
- * any uploaded item — replaceable, deletable, addressable by id.
- */
-async function adoptAsset(name, mime, userId) {
-  try {
-    const source = path.join(config.paths.www, 'assets', name);
-    const data = fs.readFileSync(source);
-    const stored = await storeUpload({ filename: name, mime, data });
-    return media.create({ ...stored, original_name: name, alt: '' }, userId);
-  } catch {
-    return null;                       // bundled asset missing: skip quietly
-  }
 }
 
 /** Called on boot: seeds an empty database, no-ops afterwards. */

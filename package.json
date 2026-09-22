@@ -1,8 +1,8 @@
 {
-  "name": "smartaremat",
+  "name": "slice-cms",
   "version": "1.0.0",
   "private": true,
-  "description": "Smartare Mat AB – website + CMS",
+  "description": "Slice – a CMS and the site it serves",
   "type": "module",
   "engines": {
     "node": ">=22.5.0"

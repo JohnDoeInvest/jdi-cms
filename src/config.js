@@ -34,6 +34,10 @@ function trustProxy(value) {
   return /^\d+$/.test(v) ? Number(v) : v;
 }
 
+const hostOf = (url) => {
+  try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return ''; }
+};
+
 const port = Number(process.env.PORT || 8080);
 
 export const config = {
@@ -81,9 +85,11 @@ export const config = {
   // so the whole flow is testable offline.
   brevoApiKey: process.env.BREVO_API_KEY || '',
   mail: {
-    fromName: 'Smartare Mat',
-    fromEmail: process.env.MAIL_FROM || 'noreply@smartaremat.se',
-    contactTo: process.env.CONTACT_TO || 'info@smartaremat.se',
+    // Empty means the site's own name, from Settings, at the moment of sending.
+    fromName: process.env.MAIL_FROM_NAME || '',
+    fromEmail: process.env.MAIL_FROM || `noreply@${hostOf(process.env.SITE_URL) || 'localhost'}`,
+    // Where a form delivers when neither it nor Settings names anyone.
+    contactTo: process.env.CONTACT_TO || '',
   },
 
   /*

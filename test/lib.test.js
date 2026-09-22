@@ -1946,8 +1946,8 @@ test('the appearance is decided in the head, before any stylesheet', () => {
     const script = head.search(/<script src="\/assets\/cms-appearance\.js[^"]*"><\/script>/);
     assert.ok(script > 0, `${where}: no appearance script in the head`);
     assert.ok(script < head.indexOf('rel="stylesheet"'), `${where}: script comes after a stylesheet`);
-    // Both wordmarks are drawn; the stylesheet picks one.
-    assert.match(page, /--for-light/);
-    assert.match(page, /--for-dark/);
+    // The mark is drawn in the chrome's ink, so it follows either appearance.
+    assert.match(page, /<svg[^>]*>\s*<rect[^>]*fill="currentColor"/);
+    assert.doesNotMatch(page, /--for-(light|dark)/);
   }
 });

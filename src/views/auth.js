@@ -2,6 +2,7 @@ import { esc } from '../lib/html.js';
 import { config } from '../config.js';
 import { asset } from '../lib/assets.js';
 import { fontFaceCss } from '../lib/fonts.js';
+import { PRODUCT, lockup } from './brand.js';
 
 /** Shared shell for the login and verification screens (Frames 4.1 / 4.2). */
 function authShell({ title, body }) {
@@ -10,7 +11,7 @@ function authShell({ title, body }) {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${esc(title)} | Smartare Mat</title>
+<title>${esc(title)} | ${PRODUCT}</title>
 <meta name="robots" content="noindex">
 <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
 <!-- Sign-in has no canvas, so it needs nothing from the site at all - but
@@ -23,10 +24,7 @@ function authShell({ title, body }) {
 <link rel="stylesheet" href="${asset('/assets/cms.css')}">
 </head>
 <body class="auth">
-  <a class="auth__logo" href="/">
-    <img class="auth__logo-img--for-light" src="/assets/logo-smartaremat.svg" alt="Smartare Mat" width="130" height="46">
-    <img class="auth__logo-img--for-dark" src="/assets/logo-smartaremat-light.svg" alt="Smartare Mat" width="130" height="46">
-  </a>
+  <a class="auth__logo" href="/" aria-label="${PRODUCT}">${lockup(36)}</a>
   <main class="auth__dialog">${body}</main>
 </body>
 </html>`;
@@ -40,7 +38,7 @@ export const loginView = ({ error = '', value = '', notice = '' } = {}) => authS
       <div class="field">
         <label for="identifier">Enter your email or mobile number</label>
         <input id="identifier" name="identifier" type="text" inputmode="email" autocomplete="username"
-               autofocus placeholder="namn@smartaremat.se" value="${esc(value)}">
+               autofocus placeholder="name@example.com" value="${esc(value)}">
       </div>
       ${error ? `<p class="auth__error">${esc(error)}</p>` : ''}
       ${notice ? `<p class="auth__notice">${esc(notice)}</p>` : ''}

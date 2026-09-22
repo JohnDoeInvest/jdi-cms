@@ -11,7 +11,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'smartaremat-feed-'));
+const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'slice-feed-'));
 process.env.DB_PATH = path.join(dir, 'cms.db');
 const { articles, categories } = await import('../src/models.js');
 const { feedFor } = await import('../src/routes/site.js');

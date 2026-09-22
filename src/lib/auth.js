@@ -4,7 +4,7 @@ import { serializeCookie, parseCookies, overTls } from './http.js';
 import { randomToken, numericCode, safeEqual, isEmail, normalizePhone, isPhone, nowSql } from './util.js';
 import { sendMail, sendSms, otpEmail, otpSms } from './mail.js';
 
-export const SESSION_COOKIE = 'sm_session';
+export const SESSION_COOKIE = 'slice_session';
 
 const ROLE_RANK = { visitor: 1, editor: 2, admin: 3 };
 export const rankOf = (role) => ROLE_RANK[role] || 0;

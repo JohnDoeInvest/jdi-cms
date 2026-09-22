@@ -1,5 +1,5 @@
 /* ===================================================================
-   Smartare Mat CMS - shared client behaviour.
+   Slice CMS - shared client behaviour.
    No dependencies; every helper is exposed on window.CMS for the
    page-specific scripts (cms-editor.js, cms-menus.js).
    =================================================================== */

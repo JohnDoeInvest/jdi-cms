@@ -5,6 +5,7 @@ import { ensureSeed } from './db/seed.js';
 import { ensureBuiltin } from './lib/fonts.js';
 import { detect as detectImages } from './lib/images.js';
 import { publishDue } from './models.js';
+import { PRODUCT } from './views/brand.js';
 
 // Load sharp before the first upload can land, so conversion is either ready
 // or has already logged why it is not.
@@ -40,7 +41,7 @@ const server = createApp().listen(config.port, config.host, (err) => {
   const bypass = config.authDisabled ? `  Login bypass:  ON (signed in as ${config.devUser})` : '  Login bypass:  off (one-time token required)';
   const mail = config.brevoApiKey ? '  Mail:          Brevo' : '  Mail:          offline (written to data/outbox/)';
   console.log(`
-  Smartare Mat
+  ${PRODUCT}
   ------------------------------------------------------------
   Listening:     http://${config.host}:${config.port}
   Public site:   ${config.siteUrl}

@@ -5,6 +5,7 @@ import { mediaUrl } from '../../lib/media.js';
 import { config } from '../../config.js';
 import { asset } from '../../lib/assets.js';
 import { theme, themeCss } from '../../lib/theme.js';
+import { PRODUCT, mark } from '../brand.js';
 
 const NAV = [
   // Leaving the CMS is a destination like any other; the divider marks it out.
@@ -51,12 +52,9 @@ function sidebar(path, user) {
   });
   return `<aside class="cms-left" data-nav-rail>
     <div class="cms-left__inner">
-      <a class="cms-left__logo" href="/cms" aria-label="Smartare Mat CMS">
-        <img class="cms-left__mark" src="/assets/logo-mark.svg" alt="" width="32" height="32">
-        <img class="cms-left__wordmark cms-left__wordmark--for-light" src="/assets/logo-smartaremat.svg"
-             alt="Smartare Mat" width="130" height="46">
-        <img class="cms-left__wordmark cms-left__wordmark--for-dark" src="/assets/logo-smartaremat-light.svg"
-             alt="Smartare Mat" width="130" height="46">
+      <a class="cms-left__logo" href="/cms" aria-label="${PRODUCT}">
+        ${mark(32, 'cms-left__mark')}
+        <span class="cms-left__wordmark">${PRODUCT}</span>
       </a>
       <nav class="cms-nav" aria-label="CMS menu">${items.join('')}</nav>
       <div class="cms-left__foot">
@@ -125,7 +123,7 @@ export function cmsLayout({ title, user, path, center, right = null, footer = nu
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${esc(title)} | Smartare Mat CMS</title>
+<title>${esc(title)} | ${PRODUCT}</title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
 <!-- Not deferred: it says light or dark before anything is drawn. -->

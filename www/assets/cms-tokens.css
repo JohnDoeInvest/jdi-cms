@@ -7,10 +7,9 @@
    renders real content through tokens.css and blocks.css, while everything
    around it draws from here.
 
-   That separation is the point. The CMS is its own product and runs more
-   than one site - smartaremat.se and macsmoser.com, with deliberately
-   different visuals - so a site changing its brand, its type scale or its
-   spacing must not move a single pixel of the editor.
+   That separation is the point. The CMS is its own product and runs sites
+   with deliberately different visuals, so a site changing its brand, its
+   type scale or its spacing must not move a single pixel of the editor.
 
    Palette: neutral greys, no warmth, no brand. One blue marks state, black
    and white carry the actions, red stays for the destructive ones. Nothing

@@ -1,5 +1,5 @@
 /* ===================================================================
-   Smartare Mat CMS - menu setup (Frame 4.7).
+   Slice CMS - menu setup (Frame 4.7).
 
    Rows are kept flat with a depth value. Dragging vertically reorders;
    dragging sideways changes depth. The first row is always top level,

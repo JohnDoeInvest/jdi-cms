@@ -1,5 +1,5 @@
 /* ===================================================================
-   Smartare Mat CMS - theme setup.
+   Slice CMS - theme setup.
 
    Three jobs: keep the colour list editable, keep the preview honest,
    and pull a palette out of an image. All of it is local - the image

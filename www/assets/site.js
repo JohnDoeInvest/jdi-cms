@@ -1,4 +1,4 @@
-/* Smartare Mat - public site behaviour. No dependencies. */
+/* Public site behaviour. No dependencies. */
 (function () {
   'use strict';
 

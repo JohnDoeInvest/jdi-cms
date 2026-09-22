@@ -31,7 +31,7 @@ const req = async (path, opts = {}) => {
     ...opts,
     headers: {
       Accept: 'application/json',
-      ...(session ? { Cookie: `sm_session=${session}` } : {}),
+      ...(session ? { Cookie: `slice_session=${session}` } : {}),
       ...(opts.headers || {}),
     },
   });
@@ -56,7 +56,7 @@ const cmsHtml = (path, extra = {}) =>
     headers: {
       ...extra,
       // The session always goes last so a caller's own Cookie cannot drop it.
-      Cookie: `sm_session=${session}${extra.Cookie ? `; ${extra.Cookie}` : ''}`,
+      Cookie: `slice_session=${session}${extra.Cookie ? `; ${extra.Cookie}` : ''}`,
     },
   }).then((x) => x.text());
 
@@ -84,7 +84,7 @@ console.log('\n== Sign in ==');
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({ identifier: who, code }).toString(),
     });
-    session = verify.headers.get('set-cookie')?.match(/sm_session=([^;]+)/)?.[1] || '';
+    session = verify.headers.get('set-cookie')?.match(/slice_session=([^;]+)/)?.[1] || '';
     ok('the code buys a session', !!session);
   }
 
