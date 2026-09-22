@@ -9,6 +9,22 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 export const db = new DatabaseSync(config.paths.db);
 db.exec(fs.readFileSync(path.join(here, 'schema.sql'), 'utf8'));
 
+/*
+ * Columns added after a database was first made.
+ *
+ * schema.sql only ever creates what is missing, so a table that already
+ * exists keeps the columns it was born with. Anything every installation
+ * needs in order to start goes here instead, guarded, so it runs once and is
+ * a no-op after. Bigger reshapes stay one-off scripts in scripts/.
+ */
+const LATER_COLUMNS = [
+  ['users', 'password_hash', "TEXT NOT NULL DEFAULT ''"],
+];
+for (const [table, column, type] of LATER_COLUMNS) {
+  const has = db.prepare(`PRAGMA table_info(${table})`).all().some((c) => c.name === column);
+  if (!has) db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
+}
+
 /** All rows. */
 export const all = (sql, ...params) => db.prepare(sql).all(...params);
 /** First row or undefined. */

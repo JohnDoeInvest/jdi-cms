@@ -1,6 +1,6 @@
 import { config } from './config.js';
 import { createApp } from './app.js';
-import { purgeExpired } from './lib/auth.js';
+import { purgeExpired, keepCodeForOldInstalls, signInMethod, needsSetup, setupToken, bypassUser } from './lib/auth.js';
 import { ensureSeed } from './db/seed.js';
 import { ensureBuiltin } from './lib/fonts.js';
 import { detect as detectImages } from './lib/images.js';
@@ -11,6 +11,7 @@ import { PRODUCT } from './views/brand.js';
 // or has already logged why it is not.
 const images = await detectImages();
 await ensureSeed();
+keepCodeForOldInstalls();
 /* A site with no typeface installed draws in whatever the browser keeps for
    last resort, so an install that has never had one is given the shipped
    family. Does nothing once any font exists - including once the shipped one
@@ -38,7 +39,14 @@ const server = createApp().listen(config.port, config.host, (err) => {
   // Express hands a failed listen to this callback rather than throwing it.
   // A server that is not listening has to exit, or launchd never restarts it.
   if (err) throw err;
-  const bypass = config.authDisabled ? `  Login bypass:  ON (signed in as ${config.devUser})` : '  Login bypass:  off (one-time token required)';
+  const SIGN_IN = { password: 'password', either: 'password or one-time code', code: 'one-time code' };
+  const bypass = config.authDisabled
+    ? `  Login bypass:  ON (signed in as ${bypassUser()?.email || 'the first admin, once there is one'})`
+    : `  Sign-in:       ${SIGN_IN[signInMethod()]}`;
+  /* The one place the first-run token is ever shown: whoever can read the
+     server's own output is whoever installed it. */
+  const setup = needsSetup()
+    ? `\n  First run:     ${config.siteUrl}/cms/setup?token=${setupToken()}` : '';
   const mail = config.brevoApiKey ? '  Mail:          Brevo' : '  Mail:          offline (written to data/outbox/)';
   console.log(`
   ${PRODUCT}
@@ -48,7 +56,7 @@ const server = createApp().listen(config.port, config.host, (err) => {
   CMS:           ${config.siteUrl}/cms
   Images:        ${images.available ? images.version : 'unconverted (sharp did not load)'}
 ${bypass}
-${mail}
+${mail}${setup}
   ------------------------------------------------------------`);
 });
 

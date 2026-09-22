@@ -1,5 +1,5 @@
 import { redirect, json, html } from '../lib/http.js';
-import { currentUser, atLeast } from '../lib/auth.js';
+import { currentUser, atLeast, needsSetup } from '../lib/auth.js';
 import { cmsLayout } from '../views/cms/layout.js';
 import { registerDashboard } from './cms/dashboard.js';
 import { registerPages } from './cms/pages.js';
@@ -14,6 +14,7 @@ import { registerTheme } from './cms/theme.js';
 import { registerForms } from './cms/forms.js';
 import { registerFonts } from './cms/fonts.js';
 import { registerSettings } from './cms/settings.js';
+import { registerAccount } from './cms/account.js';
 
 /**
  * Wrap a CMS handler with authentication and a minimum role.
@@ -27,8 +28,8 @@ const guard = (handler, role = 'visitor') => async (req, res, ctx) => {
   const wantsJson = ctx.url.pathname.startsWith('/cms/api/');
 
   if (!user) {
-    if (wantsJson) return json(res, { error: 'Inte inloggad' }, 401);
-    return redirect(res, '/cms/login');
+    if (wantsJson) return json(res, { error: 'Not signed in' }, 401);
+    return redirect(res, needsSetup() ? '/cms/setup' : '/cms/login');
   }
   if (!atLeast(user, role)) {
     if (wantsJson) return json(res, { error: 'Not permitted' }, 403);
@@ -57,4 +58,5 @@ export function registerCmsRoutes(router) {
   registerFonts(router, guard);
   registerUsers(router, guard);
   registerSettings(router, guard);
+  registerAccount(router, guard);
 }

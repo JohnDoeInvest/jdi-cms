@@ -65,17 +65,32 @@ const created = { pages: [], articles: [], slices: [], menus: [], categories: []
 /* ------------------------------------------------------------------- login */
 console.log('\n== Sign in ==');
 {
-  const who = process.env.DEV_USER || 'macsmoser@gmail.com';
+  /* E2E_EMAIL and E2E_PASSWORD sign in with a password. Without a password
+     the suite asks for a one-time code, which needs the sign-in method in
+     Settings to allow codes. */
+  const who = process.env.E2E_EMAIL || process.env.DEV_USER || '';
+  const password = process.env.E2E_PASSWORD || '';
+  if (!who) {
+    console.error('  Set E2E_EMAIL (and E2E_PASSWORD) to an admin of the server under test.');
+    process.exit(1);
+  }
   const start = await fetch(`${BASE}/cms/login`, {
     method: 'POST',
+    redirect: 'manual',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ identifier: who }).toString(),
+    body: new URLSearchParams(password
+      ? { identifier: who, password }
+      : { identifier: who, via: 'code' }).toString(),
   });
-  const page = await start.text();
+  if (password) {
+    session = start.headers.get('set-cookie')?.match(/slice_session=([^;]+)/)?.[1] || '';
+    ok('the password buys a session', !!session);
+  }
+  const page = password ? '' : await start.text();
   /* Shown on the page only when no mail key is configured and only to a local
      request - which is exactly the shape of a machine running this suite. */
   const code = page.match(/the code is <strong>(\d+)</)?.[1];
-  ok('a code is issued', !!code, code ? '' : 'no code on the page — is BREVO_API_KEY set?');
+  if (!password) ok('a code is issued', !!code, code ? '' : 'no code on the page — is BREVO_API_KEY set, or are codes off in Settings?');
 
   if (code) {
     const verify = await fetch(`${BASE}/cms/verify`, {

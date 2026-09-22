@@ -59,7 +59,7 @@ function sidebar(path, user) {
       <nav class="cms-nav" aria-label="CMS menu">${items.join('')}</nav>
       <div class="cms-left__foot">
         ${config.authDisabled ? `
-        <div class="cms-nav__notice" title="AUTH_DISABLED=1 — set to 0 to require a one-time code">
+        <div class="cms-nav__notice" title="AUTH_DISABLED=1 — set to 0 to require signing in">
           <span class="cms-nav__icon">${icon('warning', 17)}</span>
           <span class="cms-nav__label">Sign-in disabled</span>
         </div>` : ''}
@@ -98,7 +98,7 @@ function accountRow(user) {
     ? `<img src="${esc(mediaUrl(user.image_filename))}" alt="">`
     : esc(initials(user?.full_name, user?.email));
   return `<div class="cms-account">
-    <a class="cms-account__user" href="/cms/users${user?.id ? '?edit=' + user.id : ''}"
+    <a class="cms-account__user" href="/cms/account"
        title="${esc(user?.full_name || user?.email || 'Account')}">
       <span class="avatar avatar--sm">${avatar}</span>
       <span class="cms-nav__label cms-account__name">${esc(user?.full_name || user?.email || 'Unknown')}</span>

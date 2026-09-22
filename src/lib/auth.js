@@ -1,8 +1,10 @@
 import { config } from '../config.js';
-import { get, run, all } from '../db/index.js';
+import { get, run, all, setting } from '../db/index.js';
 import { serializeCookie, parseCookies, overTls } from './http.js';
 import { randomToken, numericCode, safeEqual, isEmail, normalizePhone, isPhone, nowSql } from './util.js';
 import { sendMail, sendSms, otpEmail, otpSms } from './mail.js';
+import { verifyPassword, needsRehash, hashPassword } from './password.js';
+import * as settings from './settings.js';
 
 export const SESSION_COOKIE = 'slice_session';
 
@@ -31,6 +33,11 @@ export const clearSessionCookie = () =>
 
 export function destroySession(token) {
   if (token) run('DELETE FROM sessions WHERE token = ?', token);
+}
+
+/** Sign a user out everywhere but here - after a password change, say. */
+export function endOtherSessions(userId, keepToken = '') {
+  run('DELETE FROM sessions WHERE user_id = ? AND token != ?', userId, keepToken || '');
 }
 
 const LOOPBACK = /^(::1|::ffff:127\.|127\.)/;
@@ -63,15 +70,24 @@ export const fromThisMachine = (req) => {
 };
 
 /**
+ * Who the login bypass signs in as: DEV_USER when it is set, and otherwise
+ * the first admin - which on a fresh install is whoever ran the first-run
+ * screen, so the bypass needs no configuring to be useful.
+ */
+export const bypassUser = () => (config.devUser
+  ? get('SELECT * FROM users WHERE email = ?', config.devUser)
+  : get("SELECT * FROM users WHERE role = 'admin' ORDER BY id LIMIT 1"));
+
+/**
  * Resolve the signed-in user for a request.
  *
- * When config.authDisabled is on the configured dev user is returned without
- * any cookie, so the CMS opens straight up - but only for a request from this
+ * When config.authDisabled is on the bypass user is returned without any
+ * cookie, so the CMS opens straight up - but only for a request from this
  * machine. Leaving the flag on can no longer expose anything to the network.
  */
 export function currentUser(req) {
   if (config.authDisabled && fromThisMachine(req)) {
-    const dev = get('SELECT * FROM users WHERE email = ?', config.devUser);
+    const dev = bypassUser();
     if (dev) return { ...dev, _devBypass: true };
   }
   const token = parseCookies(req.headers.cookie || '')[SESSION_COOKIE];
@@ -85,6 +101,110 @@ export function currentUser(req) {
 export function purgeExpired() {
   run("DELETE FROM sessions WHERE expires_at <= datetime('now')");
   run("DELETE FROM login_tokens WHERE expires_at <= datetime('now', '-1 day')");
+}
+
+/* ------------------------------------------------------- sign-in method */
+
+/**
+ * How people sign in, which is a Settings choice:
+ *
+ *   password  a password, and nothing else - what a fresh install uses,
+ *             because it is the one way in that needs no mail service
+ *   either    a password, or a one-time code by email or SMS instead
+ *   code      a one-time code only, for a site that would rather nobody
+ *             kept a password at all
+ */
+export const SIGN_IN_METHODS = ['password', 'either', 'code'];
+
+export const signInMethod = () => {
+  const value = settings.get('signin_method');
+  return SIGN_IN_METHODS.includes(value) ? value : 'password';
+};
+export const allowsPassword = () => signInMethod() !== 'code';
+export const allowsCode = () => signInMethod() !== 'password';
+
+/**
+ * An installation from before passwords existed signed in by code, and none
+ * of its people has a password yet. Switching it to passwords on upgrade
+ * would lock every one of them out, so it keeps the code until an admin
+ * chooses otherwise. Runs at start; a no-op once the choice has been made.
+ */
+export function keepCodeForOldInstalls() {
+  if (setting.get('signin_method', '') !== '') return;
+  const people = get('SELECT COUNT(*) AS n FROM users').n;
+  const withPassword = get("SELECT COUNT(*) AS n FROM users WHERE password_hash != ''").n;
+  if (people && !withPassword) settings.set('signin_method', 'code');
+}
+
+/* ------------------------------------------------------------- first run */
+
+/** True until somebody has made the first admin. */
+export const needsSetup = () => !get("SELECT 1 FROM users WHERE role = 'admin' LIMIT 1");
+
+/**
+ * The first-run screen makes an admin, so it has to be shut to strangers in
+ * the minutes between a server starting on a network and its owner opening
+ * it. It opens without asking for this machine, like the bypass does; from
+ * anywhere else it needs this token, which is printed in the start-up banner
+ * and nowhere else, and lives only as long as the process.
+ */
+let setupSecret = '';
+export const setupToken = () => (setupSecret ||= randomToken(18));
+export const maySetUp = (req, token) =>
+  fromThisMachine(req) || (!!token && safeEqual(String(token), setupToken()));
+
+/* ------------------------------------------------------- password login */
+
+/*
+ * Guesses are counted in memory, by address typed and by the machine asking,
+ * and a run of wrong ones shuts that door for a while. Memory is enough: a
+ * restart is not something an attacker gets to ask for, and scrypt already
+ * makes each guess slow.
+ */
+const WINDOW_MS = 15 * 60 * 1000;
+const LIMITS = { who: 5, from: 20 };
+const failures = new Map();
+
+const recent = (key) => (failures.get(key) || []).filter((t) => Date.now() - t < WINDOW_MS);
+const tooMany = (who, from) => recent(`who:${who}`).length >= LIMITS.who
+  || recent(`from:${from}`).length >= LIMITS.from;
+function fail(who, from) {
+  // Typed addresses are unbounded, so stale ones are swept before they pile up.
+  if (failures.size > 5000) {
+    for (const key of failures.keys()) if (!recent(key).length) failures.delete(key);
+  }
+  for (const key of [`who:${who}`, `from:${from}`]) failures.set(key, [...recent(key), Date.now()]);
+}
+
+/** Forget everything counted - for tests, which sign in wrong on purpose. */
+export const resetThrottle = () => failures.clear();
+
+/**
+ * Check a password. Returns { ok, user } or { ok:false, error }, and says the
+ * same thing for an unknown address as for a wrong password.
+ */
+export async function passwordSignIn({ identifier, password }, req) {
+  const id = identify(identifier);
+  const who = id?.identifier || String(identifier || '').trim().toLowerCase();
+  const from = String(req?.ip ?? req?.socket?.remoteAddress ?? '');
+  if (tooMany(who, from)) {
+    return { ok: false, error: 'Too many attempts. Wait a few minutes and try again.' };
+  }
+  const user = id ? findUserByIdentifier(id) : null;
+  const ok = await verifyPassword(password, user?.password_hash || '');
+  if (!ok) {
+    fail(who, from);
+    return { ok: false, error: 'That email and password do not match.' };
+  }
+  failures.delete(`who:${who}`);
+  // Cheapest moment to bring an old hash up to today's cost: we have the password.
+  if (needsRehash(user.password_hash)) await setPassword(user.id, password);
+  return { ok: true, user };
+}
+
+export async function setPassword(userId, password) {
+  const hash = await hashPassword(password);
+  run('UPDATE users SET password_hash = ? WHERE id = ?', hash, userId);
 }
 
 /* ------------------------------------------------------------ OTP login */

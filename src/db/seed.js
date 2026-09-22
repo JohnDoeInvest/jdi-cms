@@ -1,13 +1,12 @@
-import { config } from '../config.js';
 import { db, get, run, setting } from './index.js';
-import { pages, menus, categories, users } from '../models.js';
+import { pages, menus, categories } from '../models.js';
 import * as settings from '../lib/settings.js';
 import { newId } from '../lib/objects.js';
 
 /**
  * Structural seed only.
  *
- * This creates the scaffolding - the admin user, the two menus, a news
+ * This creates the scaffolding - the two menus, a news
  * category and four top-level pages - and deliberately leaves all page
  * content empty. Content is authored in the CMS, and the pages are only a
  * starting shape: rename them, move them, delete them.
@@ -40,17 +39,8 @@ export const EXTRA_MENU = 'Secondary menu';
 export async function seed({ force = false } = {}) {
   if (!force && setting.get('seeded')) return false;
 
-  /* --- admin user --------------------------------------------------- */
-  let admin = users.byEmail(config.devUser);
-  if (!admin) {
-    admin = users.create({
-      full_name: 'Admin',
-      email: config.devUser,
-      role: 'admin',
-    });
-  } else if (admin.role !== 'admin') {
-    admin = users.update(admin.id, { role: 'admin' });
-  }
+  /* No admin: the first-run screen makes one, with a password of its
+     owner's choosing, rather than a seeded account nobody chose. */
 
   /* Page templates are seeded with nothing, like slices: the library fills
      from real pages, saved out of the editor. */
@@ -58,7 +48,7 @@ export async function seed({ force = false } = {}) {
   /* --- categories --------------------------------------------------- */
   const existingCats = new Set(categories.list().map((c) => c.name));
   for (const name of NEWS_CATEGORIES) {
-    if (!existingCats.has(name)) categories.create(name, admin.id);
+    if (!existingCats.has(name)) categories.create(name, null);
   }
 
   /* --- pages -------------------------------------------------------- */
@@ -74,7 +64,7 @@ export async function seed({ force = false } = {}) {
         use_first_image: 1,
         status: 'published',
         blocks: [],
-      }, admin.id);
+      }, null);
     }
     created.push({ ...spec, page });
   }
@@ -109,7 +99,7 @@ export async function seed({ force = false } = {}) {
 export async function ensureSeed() {
   const fresh = await seed();
   if (fresh) {
-    console.log('  [seed] Structure created: pages, menus, categories, admin user.');
+    console.log('  [seed] Structure created: pages, menus, categories.');
   }
   return fresh;
 }

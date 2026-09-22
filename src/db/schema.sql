@@ -8,6 +8,9 @@ CREATE TABLE IF NOT EXISTS users (
   email        TEXT    NOT NULL UNIQUE COLLATE NOCASE,
   phone        TEXT    NOT NULL DEFAULT '',
   role         TEXT    NOT NULL DEFAULT 'visitor',   -- visitor | editor | admin
+  -- scrypt, as src/lib/password.js writes it. Empty: no password yet, and
+  -- the one-time code is the only way in.
+  password_hash TEXT   NOT NULL DEFAULT '',
   image_id     INTEGER REFERENCES media(id) ON DELETE SET NULL,
   country      TEXT    NOT NULL DEFAULT 'SE',
   address      TEXT    NOT NULL DEFAULT '',

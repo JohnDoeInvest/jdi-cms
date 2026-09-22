@@ -1480,6 +1480,9 @@ export const users = {
     return this.byId(id);
   },
 
+  /** Store a hash made by src/lib/password.js; '' clears the password. */
+  setPasswordHash: (id, hash) => run('UPDATE users SET password_hash = ? WHERE id = ?', hash, id),
+
   remove: (id) => run('DELETE FROM users WHERE id = ?', id).changes > 0,
 };
 

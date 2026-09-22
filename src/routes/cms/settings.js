@@ -6,6 +6,19 @@ import { field, textarea, select, mediaPicker } from '../../views/cms/parts.js';
 import { SCHEMA, all, set, parseLinks, linksToText } from '../../lib/settings.js';
 import { media, pages } from '../../models.js';
 import { config } from '../../config.js';
+import { SIGN_IN_METHODS } from '../../lib/auth.js';
+
+const METHOD_LABELS = {
+  password: 'Password',
+  either: 'Password, or a one-time code by email or SMS',
+  code: 'One-time code only — nobody keeps a password',
+};
+
+const NOTES = {
+  saved: ['notice', 'Settings saved.'],
+  'needs-password': ['notice notice--warn',
+    'Sign-in was left as it was: set yourself a password under Account first, or you could not get back in.'],
+};
 
 /**
  * Site settings — everything that makes one installation different from the
@@ -13,14 +26,16 @@ import { config } from '../../config.js';
  * deliver. Anything secret (API keys, ports) stays in the environment.
  */
 export function registerSettings(router, guard) {
-  router.get('/cms/settings', guard((req, res, { user }) => {
+  router.get('/cms/settings', guard((req, res, { user, url }) => {
     const values = all();
+    const note = NOTES[url.searchParams.get('note')];
     const pick = (key) => (values[key] ? media.byId(values[key]) : null);
 
     const center = `
       ${cmsHead('Settings')}
       <hr class="rule">
       <form method="post" action="/cms/settings" id="settings-form" class="stack" style="max-width:640px">
+        ${note ? `<p class="${note[0]}">${esc(note[1])}</p>` : ''}
 
         <section class="panel">
           <h2 class="h-section" style="margin-bottom:var(--ui-s-4)">Identity</h2>
@@ -46,6 +61,14 @@ export function registerSettings(router, guard) {
             ${mediaPicker({ name: 'favicon_media', item: pick('favicon_media'),
               label: SCHEMA.favicon_media.label, hint: SCHEMA.favicon_media.hint })}
           </div>
+        </section>
+
+        <section class="panel">
+          <h2 class="h-section" style="margin-bottom:var(--ui-s-4)">Sign-in</h2>
+          ${select({ label: SCHEMA.signin_method.label, name: 'signin_method',
+            value: values.signin_method,
+            options: SIGN_IN_METHODS.map((value) => ({ value, label: METHOD_LABELS[value] })),
+            hint: SCHEMA.signin_method.hint })}
         </section>
 
         <section class="panel">
@@ -88,7 +111,7 @@ export function registerSettings(router, guard) {
         or decide how the server starts.</p>
       <dl class="env-list">
         <dt>Sign-in</dt><dd>${config.authDisabled
-          ? 'Disabled — <code>AUTH_DISABLED=0</code> turns it on' : 'One-time code'}</dd>
+          ? 'Bypassed on this machine — <code>AUTH_DISABLED=0</code> turns it off' : 'Required'}</dd>
         <dt>Mail</dt><dd>${config.brevoApiKey
           ? 'Brevo' : 'Offline — written to <code>data/outbox/</code>'}</dd>
         <dt>Sender</dt><dd>${esc(config.mail.fromEmail)}</dd>
@@ -99,14 +122,24 @@ export function registerSettings(router, guard) {
       data: { page: 'settings' } }));
   }, 'admin'));
 
-  router.post('/cms/settings', guard(async (req, res) => {
+  router.post('/cms/settings', guard(async (req, res, { user }) => {
     const { fields } = await parseForm(req);
+    let note = 'saved';
+    if ('signin_method' in fields) {
+      if (!SIGN_IN_METHODS.includes(fields.signin_method)) delete fields.signin_method;
+      /* Passwords only, from an admin who has none, would shut the door on
+         the person closing it. */
+      else if (fields.signin_method === 'password' && !user.password_hash) {
+        delete fields.signin_method;
+        note = 'needs-password';
+      }
+    }
     for (const [key, spec] of Object.entries(SCHEMA)) {
       if (!(key in fields)) continue;
       if (spec.type === 'links') set(key, parseLinks(fields[key]));
       else if (spec.type === 'media' || spec.type === 'page') set(key, Number(fields[key]) || null);
       else set(key, String(fields[key] ?? '').trim());
     }
-    redirect(res, '/cms/settings?sparad=1');
+    redirect(res, `/cms/settings?note=${note}`);
   }, 'admin'));
 }

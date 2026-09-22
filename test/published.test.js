@@ -17,14 +17,14 @@ import path from 'node:path';
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'slice-published-'));
 process.env.DB_PATH = path.join(dir, 'cms.db');
 process.env.AUTH_DISABLED = '1';
-const { config } = await import('../src/config.js');
 const { articles, categories, publishDue, draftView } = await import('../src/models.js');
 const { run } = await import('../src/db/index.js');
 const { feedFor } = await import('../src/routes/site.js');
 const { createApp } = await import('../src/app.js');
 const { localDay } = await import('../src/lib/util.js');
 
-run("INSERT INTO users (email, full_name, role) VALUES (?, 'Test', 'admin')", config.devUser);
+// The bypass signs in as the first admin when DEV_USER is unset.
+run("INSERT INTO users (email, full_name, role) VALUES ('test@example.com', 'Test', 'admin')");
 const server = await new Promise((resolve) => {
   const s = createApp().listen(0, '127.0.0.1', () => resolve(s));
 });

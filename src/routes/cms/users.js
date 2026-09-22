@@ -7,6 +7,8 @@ import { users, media } from '../../models.js';
 import { isEmail, normalizePhone } from '../../lib/util.js';
 import { initials, formatDate } from '../../views/helpers.js';
 import { mediaUrl } from '../../lib/media.js';
+import { passwordProblem, MIN_LENGTH } from '../../lib/password.js';
+import { setPassword, endOtherSessions } from '../../lib/auth.js';
 
 const ROLES = [
   { value: 'visitor', label: 'Visitor' },
@@ -25,6 +27,11 @@ export function registerUsers(router, guard) {
   router.get('/cms/users', guard((req, res, { user, url }) => {
     const list = users.list();
     const editing = list.find((u) => String(u.id) === url.searchParams.get('edit'));
+    const passwordNote = {
+      short: `Not saved: a password needs at least ${MIN_LENGTH} characters.`,
+      long: 'Not saved: that password is too long.',
+      set: 'Password set. They were signed out everywhere else.',
+    }[url.searchParams.get('note')];
     const image = editing?.image_id ? media.byId(editing.image_id) : null;
 
     const rows = list.map((u) => `<tr${editing?.id === u.id ? ' class="is-selected"' : ''}>
@@ -87,6 +94,12 @@ export function registerUsers(router, guard) {
           ${field({ label: 'City', name: 'city', value: editing.city })}
         </div>
         <hr class="rule" style="margin:var(--ui-s-2) 0">
+        ${passwordNote ? `<p class="notice${/^Not/.test(passwordNote) ? ' notice--warn' : ''}">${esc(passwordNote)}</p>` : ''}
+        ${field({ label: editing.password_hash ? 'New password' : 'Password (none yet)', name: 'new_password',
+          type: 'password', extra: 'autocomplete="new-password"',
+          hint: editing.password_hash
+            ? 'Leave empty to keep theirs. They can change it themselves under Account.'
+            : 'Until one is set they can only sign in with a one-time code.' })}
         <div class="row" style="justify-content:space-between">
           <button class="btn btn--primary" type="submit">Save</button>
           <button class="btn btn--danger" type="button" data-delete-user="${editing.id}">Delete</button>
@@ -113,9 +126,21 @@ export function registerUsers(router, guard) {
     redirect(res, '/cms/users');
   }, 'admin'));
 
-  router.post('/cms/users/:id', guard(async (req, res, { params }) => {
+  router.post('/cms/users/:id', guard(async (req, res, { params, user }) => {
     const { fields } = await parseForm(req);
     const id = Number(params.id);
+    let note = '';
+    if (fields.new_password) {
+      const problem = passwordProblem(fields.new_password);
+      if (problem) {
+        note = /least/.test(problem) ? 'short' : 'long';
+      } else {
+        await setPassword(id, fields.new_password);
+        // Someone else's password, set by an admin: every session of theirs ends.
+        if (id !== user.id) endOtherSessions(id);
+        note = 'set';
+      }
+    }
     const email = String(fields.email || '').trim().toLowerCase();
     const clash = isEmail(email) ? users.byEmail(email) : null;
 
@@ -130,7 +155,7 @@ export function registerUsers(router, guard) {
       city: String(fields.city || ''),
       image_id: fields.image_id ? Number(fields.image_id) : null,
     });
-    redirect(res, `/cms/users?edit=${id}`);
+    redirect(res, `/cms/users?edit=${id}${note ? `&note=${note}` : ''}`);
   }, 'admin'));
 
   /* Frame 5.1 - delete confirmation needs the user's name, e-mail and avatar. */

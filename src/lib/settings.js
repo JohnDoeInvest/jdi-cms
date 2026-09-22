@@ -29,6 +29,12 @@ export const SCHEMA = {
   favicon_media:    { type: 'media', default: null,
                       label: 'Favicon', hint: 'Square image, ideally SVG or PNG.' },
 
+  /* How the CMS lets people in - see SIGN_IN_METHODS in src/lib/auth.js. A
+     fresh install uses passwords, the one way in that needs no mail service. */
+  signin_method:    { type: 'text', default: 'password',
+                      label: 'How people sign in',
+                      hint: 'A one-time code is sent by email or SMS, so it needs BREVO_API_KEY to reach anyone.' },
+
   contact_email:    { type: 'text', default: config.mail.contactTo,
                       label: 'Default form recipient', hint: 'Where forms deliver unless a form overrides it.' },
 

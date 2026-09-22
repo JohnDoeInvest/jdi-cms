@@ -67,16 +67,16 @@ export const config = {
    * Off by default, because a default is what an installation gets.
    *
    * With AUTH_DISABLED on, any visit to the CMS from this machine is signed
-   * in as `devUser` with no cookie - which is a real convenience while
-   * building and indistinguishable from no authentication at all to anyone
-   * else. It used to default to on, so a fresh install shipped open; the
+   * in with no cookie - as DEV_USER, or the first admin when that is unset.
+   * That is a real convenience while building and indistinguishable from no
+   * authentication at all to anyone else. It used to default to on, so a fresh install shipped open; the
    * bypass is now refused for any request that did not come from localhost,
    * and it has to be asked for.
    *
    * Turn it on for local work:  AUTH_DISABLED=1 ./start.sh
    */
   authDisabled: bool(process.env.AUTH_DISABLED, false),
-  devUser: process.env.DEV_USER || 'macsmoser@gmail.com',
+  devUser: process.env.DEV_USER || '',
   sessionDays: 30,
   otp: { length: 6, ttlMinutes: 10, maxAttempts: 5 },
 
