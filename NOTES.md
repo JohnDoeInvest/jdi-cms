@@ -916,6 +916,148 @@ half-done. Kept short.
 
 ## Next up
 
+- **What a theme is, and how far it reaches.** Raised 2026-09-23, after
+  smartaremat.se became the first one. Two questions arrived together and turn
+  out to be one design: *a theme should be a package you can edit, save and
+  send*, and *a site with a genuinely different front end should still be able
+  to use this CMS*. Paper first; nothing below is built.
+
+  **Where it stands.** A theme today is two things in two places. The Theme
+  screen owns the slice palette, the faces, the measures and the nine type
+  sizes, in the database. `THEME_DIR` owns `tokens.css` and `site.css`, as
+  files. So a slice band's colour is a click and the top bar's colour is a
+  text editor, though both are colours - and neither half can be handed to
+  anybody as "the theme", because one of them is rows in a database.
+
+  **The measurement that settles the file half.** The Smartare Mat theme is
+  100 declarations, of which **24 are the brand**. The other 76 are a verbatim
+  copy of the default, there only because `THEME_DIR` *replaces*
+  `tokens.css` rather than overriding it. That makes every theme a fork: when
+  the default gains a token, an existing theme has not got it, `var()`
+  resolves to nothing, and something quietly draws wrong. **A theme should be
+  a delta.** Deltas do not go stale.
+
+  ### Three layers, and what each one costs
+
+  | Layer | Is | Staleness |
+  | --- | --- | --- |
+  | **Values** — `theme.json` | the palette, surfaces, faces, measures, type | none: a delta composes |
+  | **Structure** — `shell.html` | the page around the content, slots only | real: markup cannot be a delta |
+  | **Styles** — `site.css` | whatever the values cannot say | real, and already known |
+
+  **Values are the tier almost every site should stop at.** Smartare Mat's
+  24 declarations are all colours; once the furniture moves into the panel it
+  needs no CSS at all, and its theme is one JSON file that cannot rot. Say so
+  plainly in the docs, or people will reach for the shell because it is there.
+
+  ### The furniture becomes surfaces
+
+  The move that empties `tokens.css`: `--bar-*`, `--submenu-*`, `--footer-*`
+  and `--page-bg` stop being hand-written names and become four **surfaces** -
+  Page, Top bar, Sub menu, Footer - each a background and its ink, with the
+  rest mixed from the pair. That is the mechanism `themeCss()` already uses for
+  slice bands (`--graphite` at 88%, `--grey-500` at 60%, `--line` at 18%), so
+  it is an existing idea applied one level out, not a new one.
+
+  Checked against values that were chosen by eye, from a black bar with white
+  ink: the hover background derives **exactly** (`#141414`), the rule lands
+  `#2e2e2e` against `#2a2a2a`, the menu link `#e0e0e0` against `#e3e3e3`. Only
+  "muted" is off enough to notice - `#999999` against `#b2b2b2` - so the
+  furniture wants its own ratio there rather than the band's 60%. Nine
+  choices in the panel, not twenty.
+
+  ### Structure: slots, and no logic
+
+  The question that forces this is a real one: macsmoser.com has no top bar, no
+  footer, a menu down the right and a floating hamburger, and it is the same
+  CMS. Today the shell is a template literal in `src/views/layout.js` and a
+  site can restyle it but not restructure it - `display: none` on the footer is
+  the available answer, which is not one.
+
+  **`shell.html` in the theme folder, with named slots and nothing else.**
+  `{{head}}`, `{{mainmenu}}`, `{{submenu}}`, `{{breadcrumbs}}`, `{{content}}`,
+  `{{footer}}`, `{{banner}}`. The CMS fills them; the theme decides where they
+  go and what surrounds them. No shell in the folder means the default shell,
+  which is what every site gets today.
+
+  - **Slots only, never conditionals.** The moment the template grows
+    `{{#if}}` it is a programming language, the theme is code, and this is
+    WordPress - where a theme can break the CMS and every upgrade is a gamble.
+    That is the line, and it is worth defending.
+  - **What removes the need for logic: a slot that renders nothing when it
+    does not apply.** `{{breadcrumbs}}` on a landing page is empty, not an
+    error. Most of what looks like a conditional is that.
+  - **A theme that needs real logic needs `site.js`**, which it can already
+    have. A deliberate cliff rather than a slope.
+
+  **The honest cost: structure cannot be a delta.** Values compose; markup
+  does not. Three things were added to the shell this week alone - a skip
+  link, the preview bar, translated aria-labels - and a `shell.html` written
+  last month would have none of them. A theme that supplies a shell takes on
+  maintenance that a theme supplying values does not, and that has to be said
+  out loud rather than discovered.
+
+  ### The rule that keeps this from becoming WordPress
+
+  **A theme owns everything around the content, and nothing inside it.**
+  `blocks.css` is not themeable, because the editor draws through it - that
+  shared stylesheet is the whole reason the canvas and the site cannot drift,
+  and it is not worth trading for anything. The file split already draws this
+  line: `.topbar`, `.footer`, `.card`, `.hero` are site.css and a theme's
+  business; `.b-*` are blocks.css and the CMS's.
+
+  ### A theme declares what it expects
+
+  From the same conversation, and the piece that makes a package a package: a
+  theme names its requirements and the Theme screen shows them satisfied or
+  not. "Expecting Roboto" until Roboto is uploaded - the fallback already
+  happens (`normalizeFonts` drops to an installed family on purpose), it is
+  only silent. The same reporting covers a token a `site.css` asks for and the
+  theme never defines, and a menu a shell has a slot for and the site has not
+  got. That listing is also what makes a machine-written theme checkable, which
+  matters: converting a static HTML site into a shell is mechanical work an AI
+  does well *if there is a fixed slot vocabulary and something that says
+  whether the result is complete*. A `scripts/theme-check.mjs` reporting
+  unknown slots, missing tokens and uninstalled faces is the other half of
+  that, and cheap.
+
+  ### Save and upload, on the Theme screen
+
+  Decided: the buttons belong on that page, and the file is exactly what that
+  page owns. `theme.json`, values only - readable, diffable, emailable,
+  committable, and no fourth npm package, where a zip would be one or ~120
+  lines of archive code kept forever.
+
+  - **Importing overwrites something visible and the screen has no undo.** The
+    current theme is written to `data/` before an import lands, and the upload
+    says what is about to change before it commits - the file is parsed by
+    then, so the diff is nearly free.
+  - **`theme.json` in `THEME_DIR` is a seed, not an override**: read only when
+    the database has no theme, the same relationship `seed.js` has with pages.
+    Any other way round and a restart silently reverts an afternoon's work.
+
+  ### Settled in the same conversation
+
+  - **The logotype is content, not theme.** So is the **favicon**. They are
+    the site's identity rather than its design system, and they change
+    without the design changing - a rebrand swaps a file, not a palette.
+    `favicon_media` already exists in Settings, so the favicon should come out
+    of the theme folder and go there; `smartaremat-theme/favicon.svg` is the
+    last thing that would keep that folder alive once the furniture moves.
+
+  ### Still open
+
+  - Whether the default shell should stretch further before `shell.html`
+    exists at all. Every site that can be a values-only theme is a site with
+    no maintenance, and the cheapest way to get one is a more flexible
+    default - a menu that can sit right, a footer that can be absent.
+    Possibly most of macsmoser.com is reachable that way, and it is worth
+    finding out before building a template layer for it.
+  - What `{{mainmenu}}` emits. The CMS's own markup, styled by the theme, is
+    today's contract and the simplest. A theme wanting genuinely different
+    markup would need the menu as data, which is a second, larger question.
+
+
 - **Forms, before this is packaged.** The screen works and is in use, but two
   things were noticed and not settled:
   - A form can hold a Heading, Text, Divider and Spacer as well as fields.
