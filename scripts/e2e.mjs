@@ -676,16 +676,28 @@ created.categories.push(categoryId);
 r = await req(`/cms/api/categories/${categoryId}/usage`);
 ok('usage endpoint responds', r.status === 200 && Array.isArray(r.body.alternatives));
 
-/* The article gets a subject of its own, before the feed asks for chips.
-   Without this the chip row could only appear when the database already held
-   some *other* published article carrying a category - so the check passed on
-   a developer's machine and failed on an empty one, which is the opposite of
-   what an end-to-end run is for. */
-r = await postJson(`/cms/api/articles/${articleId}`, { blocks: [], category_id: categoryId });
+/* The article gets a subject of its own *and goes out with it*, before the
+   feed asks for chips. A chip row offers the subjects of published articles,
+   and filing one is a draft change like any other - so filing without
+   publishing left the row with nothing to offer, and the check could only
+   pass where the database already held some *other* published article
+   carrying a category. It passed on a developer's machine and failed on an
+   empty one, which is the opposite of what an end-to-end run is for.
+
+   `status: 'published'` rides the same save: the ids land in the draft, and
+   publish applies them to the join table the chips are read from. */
+r = await postJson(`/cms/api/articles/${articleId}`,
+  { blocks: [], category_id: categoryId, status: 'published' });
 const filed = await cmsHtml(`/cms/articles/${articleId}/edit`);
 ok('the article is filed under a subject',
   r.status === 200 && new RegExp(`<option value="${categoryId}" selected`).test(filed),
   String(r.status));
+/* The live copy, not the draft: a subject waiting in a draft is exactly the
+   state that made the chip check fail, and it looks identical in the editor.
+   At `movedTo`, not `articlePath` - the article was moved to the site root
+   several checks ago, and the address it was born at has 404'd ever since. */
+ok('and goes out carrying it',
+  (await fetch(BASE + movedTo).then((x) => x.text())).includes(`${TAG} kategori`), movedTo);
 
 /* ------------------------------------------------------------------- feeds */
 console.log('\n== Feeds ==');
@@ -766,7 +778,11 @@ for (const card of menuCards) {
 for (const id of created.categories) await req(`/cms/categories/${id}/delete`, { method: 'POST' });
 
 ok('page removed', (await fetch(BASE + permalink)).status === 404);
-ok('article removed', (await fetch(BASE + articlePath)).status === 404);
+/* The address the article actually answers on. `articlePath` is where it was
+   born, and it has 404'd since "unpublishing lets an article move too" moved
+   the piece to the site root - so checking that one proved nothing about
+   whether the article was ever deleted. */
+ok('article removed', (await fetch(BASE + movedTo)).status === 404, movedTo);
 const after = await cmsHtml('/cms/menus');
 ok('menu removed', !after.includes(`${TAG} meny`));
 const catsAfter = await cmsHtml('/cms/categories');

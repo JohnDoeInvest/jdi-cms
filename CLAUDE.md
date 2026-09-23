@@ -54,11 +54,11 @@ blocking the first item below. What is left:
 
 1. **Make smartaremat.se a deployment of this repo.** Its `tokens.css`,
    `site.css`, logo and favicon go in a theme folder of its own, served with
-   `THEME_DIR` - a *reconciliation*, not a
-   copy: this repo reworked both files for the neutral theme (new `--bar-*`
-   names, the palette, the mobile-menu fix in 68125c2), and that site's CSS
-   predates all of it, so the brand has to be re-applied on this structure and
-   compared page by page before anyone sees it. Its menus are named
+   `THEME_DIR` - a *reconciliation*, not a copy: this repo reworked both files
+   for the neutral theme (new `--bar-*` names, the palette, the mobile-menu
+   fix in 68125c2), and that site's CSS predates all of it, so the brand has
+   to be re-applied on this structure and compared page by page before anyone
+   sees it. Its menus are named
    `Huvudmeny`/`Extramenu` - the site finds the secondary menu by name
    (`EXTRA_MENU` in `src/db/seed.js`) but falls back to the first non-main
    menu, so it should still work. Set its **Content language** to `sv` while
@@ -69,11 +69,6 @@ blocking the first item below. What is left:
    database: the column migration adds `users.password_hash` by itself and
    `keepCodeForOldInstalls()` leaves it on one-time codes, since those users
    have no passwords. Nothing else complained.
-2. **The e2e check "the feed offers its subject chips" fails on an empty
-   database**, and did before the list above. It files a live article under a
-   category, which is held as a draft, so no published article carries a
-   category and the chip row has nothing to offer. Publishing after filing
-   should fix it.
 
 ## Not in this repo
 

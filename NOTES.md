@@ -1273,10 +1273,19 @@ What held up, tested rather than assumed:
   subject chips, which only draw for a category carrying a published article -
   and the run never gave its own article one. It passed for a year on a
   developer's populated database and failed the day the articles table was
-  empty. It files its own article under its own subject now - but the article
-  is live by then, so the filing is held as a draft and the chips still have
-  nothing published to count. Not fixed yet: publishing after filing should
-  do it.
+  empty. Filing its own article under its own subject was half the fix and
+  looked like all of it: the article is live by then, so the filing waited in
+  the draft, and a chip row counts *published* articles. Settled on
+  2026-09-23 by publishing in the same save - the ids land in the draft and
+  publish applies them - and by checking the live article page carries the
+  subject, which is the half the editor's own screen cannot tell you: a
+  subject pending in a draft looks exactly like one that went out.
+- **An assertion against a stale address proves nothing.** Found beside the
+  above: the suite's "article removed" check fetched the address the article
+  was *born* at, which had 404'd since an earlier check deliberately moved the
+  piece to the site root - so it passed whether or not anything was deleted.
+  It asks the address the article actually answers on now. Worth the look
+  wherever a test reuses a value the run has since changed.
 
 - **A disabled control is a hole in the canvas.** The field previews on the
   form canvas are real `<input disabled>` elements, and a disabled control
@@ -1806,7 +1815,7 @@ What held up, tested rather than assumed:
     THEME_DIR=/srv/my-theme ./start.sh  # ...serving a theme's files over www/assets
     ./scripts/autostart.sh install    # keep it running across logins
     npm test            # 212 unit tests, the Express app's own among them
-    npm run test:e2e    # 131 checks against a running stack, signing in for real
+    npm run test:e2e    # 132 checks against a running stack, signing in for real
     SCHEDULE_WAIT=1 npm run test:e2e  # ...plus a minute's wait for the publishing clock
     npm run test:clean  # clear leftovers from an interrupted e2e run
     npm run reset       # wipe and re-seed (refuses while the server is up)
@@ -1814,10 +1823,11 @@ What held up, tested rather than assumed:
 
 A fresh database has no admin. The first visit to the CMS goes to
 `/cms/setup`, which makes one: it opens as it is on this machine, and from
-anywhere else wants the token the start-up banner prints. One e2e check, "the
-feed offers its subject chips", fails against an empty database, for the
-reason under Conventions ("A test that needs a fixture must make it"); it did
-before the 2026-09-22 changes too.
+anywhere else wants the token the start-up banner prints. The e2e suite then
+runs green against that empty database - checked on 2026-09-23 by making an
+admin in a throwaway one and pointing the suite at a server on a spare port.
+It used to fail one check there ("the feed offers its subject chips"), for
+the reason under Conventions ("A test that needs a fixture must make it").
 
 Root `assets/` is scratch: screen grabs, colour picks and backups dropped in
 while something is being talked through, and `.gitignore` leaves it on disk
