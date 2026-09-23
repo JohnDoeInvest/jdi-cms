@@ -1040,10 +1040,16 @@ half-done. Kept short.
 
   - **The logotype is content, not theme.** So is the **favicon**. They are
     the site's identity rather than its design system, and they change
-    without the design changing - a rebrand swaps a file, not a palette.
-    `favicon_media` already exists in Settings, so the favicon should come out
-    of the theme folder and go there; `smartaremat-theme/favicon.svg` is the
-    last thing that would keep that folder alive once the furniture moves.
+    without the design changing - a rebrand swaps a file, not a palette. The
+    other half of the argument is the next site: a theme that carries a
+    favicon hands somebody else your mark.
+  - **The favicon moved the same evening**, and needed no code - the path was
+    already there. `favicon_media` in Settings beats `/assets/favicon.svg` in
+    `layout.js`, so uploading it to the media library and picking it in
+    Settings was the whole job. Worth remembering as a shape: the feature that
+    looks like a build is sometimes two working mechanisms with the file in
+    the wrong one. `smartaremat-theme` is `tokens.css` and a README now, and
+    when the furniture moves it is one `theme.json`.
 
   ### Still open
 
