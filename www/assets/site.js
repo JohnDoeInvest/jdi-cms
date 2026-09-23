@@ -6,14 +6,14 @@
   var topbar = document.querySelector('[data-topbar]');
   var toggle = document.querySelector('[data-menu-toggle]');
 
-  /* One place to change the state: the open class on <html> is what stops the
-     page scrolling behind the menu, and it must never fall out of step with
-     the attribute the styles key off. */
+  /* One attribute, which the styles key off and the button reports. Nothing
+     here freezes the page any more: the open menu covers the screen by
+     itself, and freezing the page is what used to send it off-screen - a
+     page that cannot scroll gives a sticky bar nothing to stick to. */
   function setMenuOpen(open) {
     if (!topbar) return;
     topbar.setAttribute('data-open', String(open));
     if (toggle) toggle.setAttribute('aria-expanded', String(open));
-    document.documentElement.classList.toggle('is-menu-open', open);
   }
 
   if (topbar && toggle) {

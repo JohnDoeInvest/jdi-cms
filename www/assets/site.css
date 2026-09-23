@@ -135,6 +135,9 @@ p:last-child { margin-bottom: 0; }
   display: none; grid-area: tools; justify-self: end;
   background: none; border: 0; color: var(--bar-ink);
   cursor: pointer; width: 44px; height: 44px; padding: 0; place-items: center;
+  /* A quick second tap is another tap, not a request to zoom: without this,
+     Safari reads tapping the hamburger twice as double-tap-to-zoom. */
+  touch-action: manipulation;
   /* Pull the glyph back to the shell's edge: with the box gone there is
      nothing but whitespace between the bars and the margin. */
   margin-right: -4px;
@@ -532,13 +535,22 @@ input::placeholder, textarea::placeholder { color: var(--grey-300); }
   .mainmenu { display: none; }
   /* Open menu stacks: main navigation first, then the secondary links.
      Named areas keep that order regardless of markup. */
-  .topbar[data-open="true"] .topbar__inner {
-    grid-template-areas: "logo toggle" "main main" "extra extra";
-    /* Never taller than the screen, and scroll inside itself when it would
-       be, so the last items stay reachable on a short viewport. dvh tracks
-       Safari's collapsing address bar; vh is the fallback. */
-    max-height: 100vh;
-    max-height: 100dvh;
+  /* The open menu *is* the screen: the bar leaves the flow and covers the
+     viewport, scrolling inside itself when the list is longer than the
+     screen.
+
+     It used to stay in the flow with the page frozen behind it - `overflow:
+     hidden` on html and body. That freeze is what broke it: a page that
+     cannot scroll has nothing for a sticky bar to stick to, so the bar fell
+     back to the top of the *document*. Opened anywhere but the top of a
+     page, the menu appeared above the viewport - on a phone, hundreds of
+     pixels up - and the same rule stopped you scrolling back to it, so the
+     site read as frozen. Nothing is frozen now: the overlay is over
+     everything, and the page keeps the scroll position it had. */
+  .topbar[data-open="true"] {
+    position: fixed;
+    inset: 0;
+    z-index: 70;
     overflow-y: auto;
     /* The toggle leans 4px past the edge on purpose (see above), and a box
        that scrolls one way scrolls both - so without this the open menu
@@ -547,12 +559,11 @@ input::placeholder, textarea::placeholder { color: var(--grey-300); }
     /* Reaching the end of the menu must not start scrolling the page. */
     overscroll-behavior: contain;
   }
-
-  /* Freeze the page while the menu is over it, so a swipe moves the menu
-     rather than the article behind it. Scoped to this breakpoint: left
-     global, a window resized to desktop while open would lock scrolling
-     with no menu in sight. */
-  .is-menu-open, .is-menu-open body { overflow: hidden; }
+  /* The bar itself carries the background, so it covers the screen whether
+     the list is long or short; this only stacks what is inside it. */
+  .topbar[data-open="true"] .topbar__inner {
+    grid-template-areas: "logo toggle" "main main" "extra extra";
+  }
   .topbar[data-open="true"] .mainmenu,
   .topbar[data-open="true"] .topbar__extra {
     display: flex; justify-self: stretch;
