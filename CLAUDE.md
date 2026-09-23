@@ -23,9 +23,17 @@ clone, its brand in a theme folder beside it, its content in its own
 nothing to carry between them: a fix made here reaches that site with
 `git pull`.
 
+That brand is a repository of its own — `macsmoser/smartaremat-theme`, two
+files and a README — because a theme is per-site where this is shared, and a
+designer should be able to work in one without touching the other. The line
+is drawn around the **look**, not around front end and back end:
+`blocks.css` and `src/views/render.js` draw the public page and the editor's
+canvas alike, so a repo boundary through them would reintroduce exactly the
+drift this repo exists to prevent.
+
 The reconciliation is written up in NOTES under "The first real theme". Worth
 knowing if a second site ever follows: what a site keeps is its database, its
-uploads and a theme folder; everything else is this repository.
+uploads and a theme repo; everything else is this repository.
 
 
 ## House rules
