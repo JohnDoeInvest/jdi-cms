@@ -378,6 +378,27 @@ half-done. Kept short.
     not have is a Swedish string or the old branding. Nothing had to come
     back, which is the first evidence the two have not diverged in the
     direction that would matter.
+- **The site moved onto this code the same day.** `Dev/smartaremat` is a clone
+  of this repo now, with its `data/cms.db`, `www/media` and `www/fonts` as the
+  only things in it that are its own, and `THEME_DIR` pointing at a sibling
+  folder. Updating it is `git pull` and a restart. What the move actually
+  taught:
+  - **The theme folder has to reach the *service*, not the shell.** The site
+    runs under a launchd agent, so `THEME_DIR` went in the agent's
+    `EnvironmentVariables`; putting it in `start.sh` would have left the site
+    coming up in neutral greys at every login, and looking like the theme was
+    broken rather than unset.
+  - **Swap folders, never files.** The old installation was renamed rather
+    than emptied, so it still holds its own code *and* its own database: the
+    rollback is one `launchctl` pointing back at it, and nothing had to be
+    trusted to a backup. The database was copied into the new checkout and
+    checked - counts and `PRAGMA integrity_check` - before anything was moved.
+  - **Stop the server before copying SQLite.** A running site keeps a WAL
+    beside the database; copy the `.db` alone and the newest content is
+    silently missing. Stopped first, the WAL is folded in and one file is the
+    whole thing.
+  - The public output was compared before and after against the same pages:
+    identical, except a feed that picks at random.
 - **The public site speaks the site's language** (2026-09-23). English by
   default, Swedish where `site_language` says so, from `src/lib/words.js`;
   dates take the locale that comes with it, and a short date stays ISO in
@@ -1868,6 +1889,10 @@ What held up, tested rather than assumed:
     npm run test:clean  # clear leftovers from an interrupted e2e run
     npm run reset       # wipe and re-seed (refuses while the server is up)
     node scripts/image-backfill.mjs   # convert what is missing, add missing fallbacks
+
+These two are what stands between this repo and a running site: smartaremat.se
+is a deployment of this code now, so a change here reaches it on the next
+`git pull`.
 
 A fresh database has no admin. The first visit to the CMS goes to
 `/cms/setup`, which makes one: it opens as it is on this machine, and from
