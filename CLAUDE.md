@@ -52,23 +52,44 @@ with `THEME_DIR` for a site's own, and an installer README with the AGPL. So
 is the site dictionary (`src/lib/words.js`, 2026-09-23), which was the thing
 blocking the first item below. What is left:
 
-1. **Make smartaremat.se a deployment of this repo.** Its `tokens.css`,
-   `site.css`, logo and favicon go in a theme folder of its own, served with
-   `THEME_DIR` - a *reconciliation*, not a copy: this repo reworked both files
-   for the neutral theme (new `--bar-*` names, the palette, the mobile-menu
-   fix in 68125c2), and that site's CSS predates all of it, so the brand has
-   to be re-applied on this structure and compared page by page before anyone
-   sees it. Its menus are named
-   `Huvudmeny`/`Extramenu` - the site finds the secondary menu by name
-   (`EXTRA_MENU` in `src/db/seed.js`) but falls back to the first non-main
-   menu, so it should still work. Set its **Content language** to `sv` while
-   deploying: that is what now decides "Läs mer" under a card, the button on
-   its contact form and how its article dates are written.
+1. **Switch smartaremat.se onto this repo.** The theme is built and checked;
+   only the cutover is left. The brand lives in
+   `/Users/macs/Dev/smartaremat-theme` (`tokens.css` and `favicon.svg`, no
+   `site.css` - see NOTES, "The first real theme"), verified on 2026-09-23 by
+   rendering that site's own database through this code on a spare port: 22 of
+   23 pages byte-identical to the running site.
 
-   Checked on 2026-09-23 by running this code against a copy of that site's
-   database: the column migration adds `users.password_hash` by itself and
-   `keepCodeForOldInstalls()` leaves it on one-time codes, since those users
-   have no passwords. Nothing else complained.
+   The site runs from `/Users/macs/Dev/smartaremat` under a launchd agent,
+   `local.smartaremat.node`, on :8080. The cutover keeps all of that - same
+   folder, same agent, same port, same `data/cms.db`, `www/media` and
+   `www/fonts`. What changes is `src/`, `www/assets/`, `scripts/`, `test/`
+   and the root files.
+
+   What has to happen, and what to watch:
+   - **`THEME_DIR` must reach the server**, which means the
+     `EnvironmentVariables` dict in
+     `~/Library/LaunchAgents/local.smartaremat.node.plist`, not only
+     `start.sh`. Without it the site comes up in the neutral default theme -
+     white bar, grey palette - the most visible way this can go wrong and the
+     easiest to miss in a log.
+   - **`?kategori=` becomes `?category=`**, with no alias. Chip links already
+     given out or indexed stop filtering: they land on the unfiltered feed
+     rather than a 404. The one URL the move costs.
+   - **Sign-in stays on one-time codes**, because those users have no
+     password: `keepCodeForOldInstalls()` sees to it, and the column
+     migration adds `users.password_hash` by itself. With no `BREVO_API_KEY`
+     the code prints on the page for a request from that machine.
+   - **The CMS interface becomes English.** The site's own words stay
+     Swedish - `site_language` is already `sv` there.
+   - `logo_dark_media` goes unused: this repo's CMS draws its own mark, and
+     Settings holds one logo. Nothing to do; the row stays in the table.
+   - Its menus are named `Huvudmeny`/`Extramenu`; the site finds the secondary
+     menu by name (`EXTRA_MENU` in `src/db/seed.js`) and falls back to the
+     first non-main menu, so both are reached either way.
+
+   Rolling back is `git reset --hard` in that folder, which is a clean
+   checkout of its own history - worth keeping true by not committing there
+   during the cutover.
 
 ## Not in this repo
 

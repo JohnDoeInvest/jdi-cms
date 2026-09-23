@@ -351,9 +351,39 @@ half-done. Kept short.
   in `www/assets`, everything else falling through; `tokens.css` and
   `site.css` are the pair a theme is made of. That is what lets another site
   be a deployment of this repo rather than a copy of it.
-- **The public site is English**, strings inline in the views. Dates are
-  en-GB in words ("22 September 2026") and ISO in figures. The subject filter
-  is `?category=`, with no alias for the Swedish name it had before.
+- **The first real theme, and what it proved** (2026-09-23). smartaremat.se -
+  warm paper, a black top bar, a near-black footer, the logotype's yellow
+  beside things - was rebuilt as a theme and checked against the running site
+  page by page. It is `tokens.css` and `favicon.svg`, and **no `site.css`**:
+  every colour that brand changes turned out to be a token, so the default
+  `site.css` draws it untouched. That is the whole bet of the `--bar-*` /
+  `--submenu-*` / `--footer-*` rename paying off - a theme with no stylesheet
+  of its own is a theme nobody has to reconcile at the next upgrade.
+  - **Measured rather than eyeballed.** That site's own database rendered
+    through this code, on a spare port, against the live one: 22 of 23 pages
+    byte-identical, and every computed colour on the bar, the sub menu and
+    the footer equal. The differences were a random feed picking a different
+    article and one deliberately reworded 404.
+  - **Two tokens carry two of the old values each**, and that is the only
+    place the reconciliation is not exact. `--bar-ink` was `--off-white` on
+    the bar itself and `--white` on the active item; `--bar-rule` was nothing
+    on the bar's own edge and `#2a2a2a` inside the open menu on a phone. Both
+    resolved toward the visible use - a 1px black-on-black edge and a shade
+    of white nobody can pick out - and both checked on screen.
+  - **What a theme cannot hold, and should not try to.** The logotype is an
+    upload named in Settings; the slice palette, the faces and the measures
+    are the Theme screen's, in the database; the words follow
+    `site_language`. A theme is the look that is not already somewhere else.
+  - The lift has held: everything in that site's `src/` that this repo's does
+    not have is a Swedish string or the old branding. Nothing had to come
+    back, which is the first evidence the two have not diverged in the
+    direction that would matter.
+- **The public site speaks the site's language** (2026-09-23). English by
+  default, Swedish where `site_language` says so, from `src/lib/words.js`;
+  dates take the locale that comes with it, and a short date stays ISO in
+  every language. The subject filter is `?category=`, with no alias for the
+  Swedish name it had before - the one URL a site moving onto this repo
+  actually loses.
 - **A slice is a band and an inner box.** The band runs the full width of
   whatever contains it and carries the background; the inner box caps how wide
   the content draws (`container`: narrow / body / wide / edge-to-edge, measured
@@ -1166,6 +1196,24 @@ What held up, tested rather than assumed:
 
 ## Conventions worth keeping
 
+- **Freezing the page breaks anything sticky on it.** The mobile menu put
+  `overflow: hidden` on html and body so the page would not scroll behind it -
+  and a page that cannot scroll gives a sticky element nothing to stick to, so
+  the bar holding the menu fell back to the top of the *document*. Opened
+  scrolled down, the menu appeared hundreds of pixels above the viewport and
+  the same rule took away the scrolling that would have reached it: the site
+  read as frozen. It reproduces in any browser - it only needs the page to be
+  scrolled - which is worth remembering before blaming Safari. The open menu
+  is a fixed panel over the viewport now; nothing is frozen, the page keeps
+  its scroll position, and `overscroll-behavior: contain` is what stops a
+  swipe over the menu moving the page behind it.
+  - **A control that can be tapped twice wants `touch-action: manipulation`.**
+    Safari reads two quick taps on a small button as double-tap-to-zoom, which
+    is what turned "the menu is off screen" into "the whole site has given up".
+  - Written down on smartaremat.se the day it was found (3140c41 there) and
+    carried here on 2026-09-23. The *fix* came over the same day (68125c2);
+    the lesson took another one, which is the drift the two repos are for
+    noticing.
 - The CMS shares no CSS with the site. `--ui-*` in cms-tokens.css is the
   editor's own set; tokens.css belongs to the site being edited. Both load in
   the editor - the canvas needs site tokens to look like the site - and the

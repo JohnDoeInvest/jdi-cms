@@ -91,16 +91,23 @@ const sv = {
   passwordWrong: 'Fel lösenord. Försök igen.',
   view:          'Visa',
 
-  notFound:      'Sidan finns inte',
-  notFoundNote:  'Det finns ingenting på den här adressen, eller så är sidan inte publicerad än.',
-  goHome:        'Gå till startsidan',
+  /* "hittades inte" rather than "finns inte": the address may well exist,
+     and what the page is saying is that nothing was found at it - which is
+     what the English says too. Taken from smartaremat.se, along with the
+     short form on the button, which is what a button wants. */
+  notFound:      'Sidan hittades inte',
+  notFoundNote:  'Det finns ingenting på den här adressen, eller så är sidan inte publicerad ännu.',
+  goHome:        'Till startsidan',
 
   skipToContent: 'Hoppa till innehållet',
   menu:          'Meny',
   mainMenu:      'Huvudmeny',
   sectionMenu:   'Undermeny',
   breadcrumbs:   'Brödsmulor',
-  home:          'Hem',
+  /* The breadcrumb's first link, which is a *page* rather than a place -
+     "Hem" is the English word translated and reads like a smart speaker.
+     Taken from smartaremat.se, which has said Startsida for years. */
+  home:          'Startsida',
 };
 
 /*

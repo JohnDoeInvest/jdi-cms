@@ -2037,7 +2037,7 @@ test('the shell speaks the site\'s language, aria-labels included', () => {
   assert.match(page, /aria-label="Huvudmeny"/);
   assert.match(page, /aria-label="Undermeny"/);
   assert.match(page, /aria-label="Brödsmulor"/);
-  assert.match(page, /aria-label="Hem"/);
+  assert.match(page, /aria-label="Startsida"/);
   assert.doesNotMatch(page, /Skip to content|Breadcrumbs/);
 });
 
