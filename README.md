@@ -22,8 +22,12 @@ so what you see while editing is what visitors get.
   without forking.
 
 The CMS interface is English. The site it builds is whatever language you
-write it in, though the few words the site itself supplies ("Read more",
-"Page not found") are English too.
+write it in — and the handful of words the site supplies for itself ("Read
+more", "Send", "Page not found"), along with the way it writes dates, follow
+the **Content language** you set in Settings. English and Swedish ship; a
+language with no words of its own is furnished in English and still says in
+its markup what it is written in. Adding one is a block of about thirty
+strings in `src/lib/words.js`.
 
 ---
 

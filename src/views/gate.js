@@ -1,5 +1,6 @@
 import { esc } from '../lib/html.js';
 import { siteLayout } from './layout.js';
+import { siteWords } from '../lib/words.js';
 
 /**
  * The password gate.
@@ -15,6 +16,7 @@ import { siteLayout } from './layout.js';
  */
 export function passwordGate(page, ctx, { error = '' } = {}) {
   const action = esc(page.permalink);
+  const words = ctx?.words || siteWords(ctx?.lang);
   return siteLayout({
     title: page.title,
     // Nothing about the page's content leaves the server, the description and
@@ -24,13 +26,13 @@ export function passwordGate(page, ctx, { error = '' } = {}) {
     content: `<div class="gate">
       <form class="gate__card" method="post" action="${action}">
         <h1 class="gate__title">${esc(page.title)}</h1>
-        <p class="gate__note">This page is protected. Enter the password to view it.</p>
+        <p class="gate__note">${esc(words.passwordNote)}</p>
         ${error ? `<p class="gate__error" role="alert">${esc(error)}</p>` : ''}
-        <label class="visually-hidden" for="gate-password">Password</label>
+        <label class="visually-hidden" for="gate-password">${esc(words.password)}</label>
         <input class="gate__input" id="gate-password" type="password" name="password"
                autocomplete="current-password" autocapitalize="off" spellcheck="false"
                required autofocus>
-        <button class="gate__button" type="submit">View</button>
+        <button class="gate__button" type="submit">${esc(words.view)}</button>
       </form>
     </div>`,
     ctx,

@@ -1,5 +1,6 @@
 import { setting as store, json } from '../db/index.js';
 import { config } from '../config.js';
+import { LANGUAGES } from './words.js';
 
 /**
  * Site settings.
@@ -14,8 +15,14 @@ export const SCHEMA = {
                       label: 'Site name', hint: 'Used in the browser tab and share previews.' },
   site_url:         { type: 'text', default: config.siteUrl,
                       label: 'Site address', hint: 'Base URL used for canonical links and share images.' },
+  /* What the site is written in. It sets the page's `lang` attribute, picks
+     the language of the few words the site supplies itself, and decides how
+     dates are written. A language with no words of its own (see
+     src/lib/words.js) still gets an honest `lang` and English furniture. */
   site_language:    { type: 'text', default: config.defaultLang,
-                      label: 'Content language', hint: 'Two-letter code used in the page\'s lang attribute.' },
+                      label: 'Content language',
+                      hint: `Two-letter code for the page's lang attribute, the site's own words and its dates. `
+                            + `Words exist in: ${LANGUAGES.join(', ')}.` },
   /* Where the site is, which is not the same question as what it is written
      in: a Swedish site can be read in English. Only a phone field uses it so
      far, as the country its prefix starts on. */

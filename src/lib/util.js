@@ -85,6 +85,13 @@ export const nowSql = () => new Date().toISOString().slice(0, 19).replace('T', '
  * English, in the day-month order most of the English-speaking world reads -
  * "7 September 2026" - and a 24-hour clock. A short date is ISO, 2026-09-07,
  * which no reader anywhere can take for a different day.
+ *
+ * This is the *CMS's* locale, and the CMS is English, so everything that
+ * formats a date for a list, a status line or a schedule keeps it. The site
+ * is a different matter: it has a language setting, and a date drawn on a
+ * page is handed the locale that comes with the site's dictionary -
+ * `words.locale`, see src/lib/words.js - as the argument these functions
+ * otherwise default.
  */
 const LOCALE = 'en-GB';
 
@@ -95,6 +102,7 @@ export function formatDate(value) {
   return `${d.getFullYear()}-${two(d.getMonth() + 1)}-${two(d.getDate())}`;
 }
 
+/** A date in words. The site passes its own locale; the CMS takes the default. */
 export function formatDateLong(value, locale = LOCALE) {
   const d = sqlToDate(value);
   if (!d) return '';

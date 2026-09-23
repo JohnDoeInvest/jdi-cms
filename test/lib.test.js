@@ -31,6 +31,12 @@ import { statusPill, editorActions, addressState, scheduleCell } from '../src/vi
 import { readFileSync } from 'node:fs';
 import { loginView } from '../src/views/auth.js';
 import { cmsLayout } from '../src/views/cms/layout.js';
+import { siteWords, LANGUAGES } from '../src/lib/words.js';
+import { siteLayout } from '../src/views/layout.js';
+import { passwordGate } from '../src/views/gate.js';
+import { feedItems } from '../src/views/render.js';
+import { formatDateLong } from '../src/lib/util.js';
+import { readdirSync } from 'node:fs';
 import {
   countryList, countryOptions, isCountry, dialFor, flagFor, joinPhone, isDiallable,
 } from '../src/lib/phone.js';
@@ -1955,5 +1961,164 @@ test('the appearance is decided in the head, before any stylesheet', () => {
     // The mark is drawn in the chrome's ink, so it follows either appearance.
     assert.match(page, /<svg[^>]*>\s*<rect[^>]*fill="currentColor"/);
     assert.doesNotMatch(page, /--for-(light|dark)/);
+  }
+});
+
+
+/* ---------------------------------------------------- the site's own words */
+
+const EN = siteWords('en');
+
+/** A site context of the kind buildContext makes, in a given language. */
+const siteCtx = (lang, extra = {}) => ({
+  lang, words: siteWords(lang), settings: { site_name: 'S' },
+  mainTree: [], extraTree: [], footerTree: [], path: '/', ...extra,
+});
+
+test('every language says everything English says, in the same shape', () => {
+  // A missing word draws as nothing at all, and a missing *function* draws as
+  // a crash - so the shapes have to match, not just the key names.
+  for (const lang of LANGUAGES) {
+    const words = siteWords(lang);
+    for (const [key, value] of Object.entries(EN)) {
+      assert.equal(typeof words[key], typeof value, `${lang}.${key} is the wrong kind`);
+      assert.ok(words[key], `${lang}.${key} is empty`);
+    }
+  }
+});
+
+test('nothing but English still reads in English', () => {
+  /* English sits underneath every other language so a word added and not yet
+     translated draws as English rather than as a blank. That is a safety net,
+     not a way of working: anything actually falling through is meant to be
+     found here rather than on a page. */
+  for (const lang of LANGUAGES.filter((l) => l !== 'en')) {
+    const words = siteWords(lang);
+    const untranslated = Object.keys(EN).filter((key) => String(words[key]) === String(EN[key]));
+    assert.deepEqual(untranslated, [], `${lang}: still English`);
+  }
+});
+
+test('a language is found by its own subtag, and keeps the region it named', () => {
+  // sv, sv-SE and sv-FI are all Swedish; only the dates differ.
+  assert.equal(siteWords('sv').readMore, siteWords('sv-FI').readMore);
+  assert.equal(siteWords('SV').readMore, siteWords('sv').readMore);
+  assert.equal(siteWords('sv-FI').locale, 'sv-FI');
+  // A plain tag takes the language's own default region.
+  assert.equal(siteWords('sv').locale, 'sv-SE');
+  assert.equal(siteWords('en').locale, 'en-GB');
+  // ...and a site that asks for another one gets it, which is the only way
+  // to say "September 7" rather than "7 September".
+  assert.equal(siteWords('en-US').locale, 'en-US');
+});
+
+test('a language with no words of its own is furnished in English, and still says what it is', () => {
+  assert.equal(siteWords('de').readMore, 'Read more');
+  assert.equal(siteWords('').readMore, 'Read more');
+  // The lang attribute is about the content, not about the furniture: a
+  // German site is German even where the CMS has nothing German to say.
+  const page = siteLayout({ title: 'T', content: '', ctx: siteCtx('de') });
+  assert.match(page, /<html lang="de">/);
+  assert.match(page, /Skip to content/);
+});
+
+test('the shell speaks the site\'s language, aria-labels included', () => {
+  /* An aria-label is a word too - it is what a screen reader says out loud -
+     so a Swedish site announcing "Main menu" is making the same mistake as
+     one printing it, just to fewer people. */
+  const page = siteLayout({
+    title: 'T', content: '', trail: [{ label: 'Om oss', href: '/om-oss' }],
+    submenu: [{ label: 'Historia', href: '/om-oss/historia' }],
+    ctx: siteCtx('sv', { mainTree: [{ label: 'Hem', href: '/' }] }),
+  });
+  assert.match(page, /<html lang="sv">/);
+  assert.match(page, /href="#main">Hoppa till innehållet</);
+  assert.match(page, /aria-label="Meny"/);
+  assert.match(page, /aria-label="Huvudmeny"/);
+  assert.match(page, /aria-label="Undermeny"/);
+  assert.match(page, /aria-label="Brödsmulor"/);
+  assert.match(page, /aria-label="Hem"/);
+  assert.doesNotMatch(page, /Skip to content|Breadcrumbs/);
+});
+
+test('the password gate asks in the site\'s language', () => {
+  const gate = passwordGate({ title: 'Intern', permalink: '/intern' }, siteCtx('sv'));
+  assert.match(gate, /Den här sidan är skyddad/);
+  assert.match(gate, />Lösenord</);
+  assert.match(gate, />Visa</);
+  // A gate rendered with no context at all is still a gate, in English.
+  assert.match(passwordGate({ title: 'X', permalink: '/x' }, null), />View</);
+});
+
+test('a feed says Read more, Show more and All in the site\'s language', () => {
+  const ctx = { ...siteCtx('sv'), path: '/nyheter' };
+  const feed = (props, batch) => renderObject(
+    { id: 'feed01', kind: 'articles', props: feedBlock(props).props, style: {} },
+    { ...ctx, feedFor: () => batch });
+
+  const withChips = feed({ more: 'button', filter: true }, {
+    items: [oneArticle], hasMore: true, active: null,
+    chips: [{ id: 3, name: 'Nyheter', slug: 'nyheter' }],
+  });
+  assert.match(withChips, /aria-label="Ämnen"/);
+  assert.match(withChips, /class="chip is-active" href="\/nyheter">Alla</);
+  assert.match(withChips, /data-feed-more>Visa fler</);
+
+  const empty = feed({}, { items: [], hasMore: false, chips: [], active: null });
+  assert.match(empty, /Inga publicerade artiklar än\./);
+
+  /* The load-more endpoint renders the next batch with feedItems directly,
+     so the words have to reach it by the same route the first batch's did -
+     or a Swedish feed would turn English halfway down. */
+  assert.match(feedItems([oneArticle], 'list', siteWords('sv')), /Läs mer/);
+  assert.match(feedItems([oneArticle], 'list'), /Read more/);
+});
+
+test('a form is sent and thanked for in the site\'s language', () => {
+  const [placed] = normalizeObjects([{ kind: 'form', props: { formId: 4 } }]);
+  const stored = { id: 4, name: 'Kontakt', objects: [], colour: 'brand', button_size: 'normal' };
+  const ctx = { ...siteCtx('sv'), forms: new Map([[4, stored]]), path: '/kontakt' };
+
+  assert.match(renderObject(placed, ctx), /type="submit">Skicka</);
+  // A form with its own wording keeps it: the author has spoken.
+  assert.match(renderObject(placed, { ...ctx, forms: new Map([[4, { ...stored, submit_label: 'Iväg' }]]) }),
+    /type="submit">Iväg</);
+  assert.match(renderObject(placed, { ...ctx, flash: { formSentId: placed.id } }),
+    /Tack för ditt meddelande!/);
+});
+
+test('what a form refuses is said in the site\'s language, and says which field', () => {
+  const sv = siteWords('sv');
+  assert.equal(sv.fillIn('Namn, E-post'), 'Fyll i: Namn, E-post.');
+  assert.equal(EN.fillIn('Name'), 'Please fill in: Name.');
+  // The field's own label leads, because that is what the visitor is looking
+  // for on the page; only the qualifier is the site's to translate.
+  assert.match(sv.needsEmail('E-post'), /^E-post \(/);
+  assert.match(EN.needsPhone('Phone'), /^Phone \(a valid number\)$/);
+});
+
+test('a date on the site is written the way the site\'s language writes it', () => {
+  const day = '2026-09-07 10:00:00';
+  assert.equal(formatDateLong(day, siteWords('en').locale), '7 September 2026');
+  assert.equal(formatDateLong(day, siteWords('sv').locale), '7 september 2026');
+  assert.equal(formatDateLong(day, siteWords('en-US').locale), 'September 7, 2026');
+  // The CMS is English whatever the site is, so its own default is unmoved.
+  assert.equal(formatDateLong(day), '7 September 2026');
+  assert.match(relativeDate('2026-09-07 10:00:00', undefined, new Date(2026, 8, 8)), /^Yesterday$/);
+});
+
+test('the CMS has no dictionary, and is not quietly growing one', () => {
+  /* The house rule: the CMS interface is English and its strings sit inline
+     beside their neighbours. The site's words are a separate thing, for the
+     separate reason that the site has a language setting. A CMS screen
+     reaching for this dictionary would be the first half of a second one. */
+  const files = [
+    ...readdirSync(new URL('../src/routes/cms', import.meta.url)).map((f) => `src/routes/cms/${f}`),
+    ...readdirSync(new URL('../src/views/cms', import.meta.url)).map((f) => `src/views/cms/${f}`),
+    'src/routes/cms.js', 'src/views/auth.js', 'src/views/icons.js',
+  ];
+  for (const file of files) {
+    const src = readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
+    assert.ok(!/words\.js/.test(src), `${file} imports the site's dictionary`);
   }
 });

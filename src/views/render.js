@@ -7,6 +7,17 @@ import { slugify } from '../lib/util.js';
 import { parseEmbed } from '../lib/embed.js';
 import { countryOptions } from '../lib/phone.js';
 import { breadcrumbs } from './layout.js';
+import { siteWords } from '../lib/words.js';
+
+/**
+ * The site's own words, for a renderer handed a context without them.
+ *
+ * English is the same fallback `config.defaultLang` is, and it keeps every
+ * function in this file callable with a bare context - which is how the tests
+ * draw one object at a time, and how a renderer stays a pure function of what
+ * it is given.
+ */
+const wordsIn = (ctx) => ctx?.words || siteWords();
 
 
 /**
@@ -164,7 +175,7 @@ export function renderObject(obj, ctx) {
        place it. `ctx.trail` is null on the landing page itself. */
     case 'breadcrumbs':
       return ctx.trail?.length
-        ? `<div class="b-breadcrumbs${align}"${s}>${breadcrumbs(ctx.trail)}</div>`
+        ? `<div class="b-breadcrumbs${align}"${s}>${breadcrumbs(ctx.trail, wordsIn(ctx))}</div>`
         : '';
 
     default:
@@ -302,11 +313,12 @@ function renderForm(obj, ctx, s) {
       : '';
   }
 
+  const words = wordsIn(ctx);
   const sent = ctx.flash?.formSentId === obj.id;
   if (sent) {
     return `<section class="b-form"${s}>
       <p class="b-form__status b-form__status--ok">${
-        esc(form.success_message || 'Thank you for your message!')}</p>
+        esc(form.success_message || words.formThanks)}</p>
     </section>`;
   }
 
@@ -317,7 +329,7 @@ function renderForm(obj, ctx, s) {
      a full-width band of its own. */
   const body = form.objects?.length
     ? joinHtml(form.objects.map((obj) => renderObject(obj, ctx)))
-    : '<p class="b-field__hint">This form has no fields yet.</p>';
+    : `<p class="b-field__hint">${esc(words.formEmpty)}</p>`;
 
   return `<form class="b-form" method="post" action="/form/submit" novalidate${s}>
     <input type="hidden" name="page" value="${esc(ctx.path || '')}">
@@ -326,7 +338,7 @@ function renderForm(obj, ctx, s) {
     ${body}
     <div><button class="${buttonClasses({
       colour: form.colour, outline: form.outline, buttonSize: form.button_size,
-    })}" type="submit">${esc(form.submit_label || 'Send')}</button></div>
+    })}" type="submit">${esc(form.submit_label || words.send)}</button></div>
   </form>`;
 }
 
@@ -400,19 +412,19 @@ const FEED_WRAP = {
  * one description of what an article looks like, rather than a second copy
  * living in the browser.
  */
-export function feedItems(list, layout = 'grid') {
+export function feedItems(list, layout = 'grid', words = siteWords()) {
   if (layout === 'feature' || layout === 'feature-reverse') {
-    return joinHtml(list.map((a) => articleFeature(a, layout === 'feature-reverse')));
+    return joinHtml(list.map((a) => articleFeature(a, layout === 'feature-reverse', words)));
   }
-  if (layout === 'list') return list.map(articleRow).join('');
+  if (layout === 'list') return list.map((a) => articleRow(a, words)).join('');
   return list.map(articleCard).join('');
 }
 
 /** Subjects a visitor can narrow the feed to, plus the way back to all of them. */
-function chipRow(chips, active, path) {
+function chipRow(chips, active, path, words) {
   const href = (slug) => esc(slug ? `${path}?category=${encodeURIComponent(slug)}` : path);
-  return `<nav class="chip-row" aria-label="Subjects">
-    <a class="chip${active ? '' : ' is-active'}" href="${href('')}">All</a>
+  return `<nav class="chip-row" aria-label="${esc(words.subjects)}">
+    <a class="chip${active ? '' : ' is-active'}" href="${href('')}">${esc(words.allSubjects)}</a>
     ${chips.map((c) => `<a class="chip${active === c.id ? ' is-active' : ''}"
        href="${href(c.slug)}">${esc(c.name)}</a>`).join('')}
   </nav>`;
@@ -429,14 +441,15 @@ function chipRow(chips, active, path) {
  */
 function renderArticleFeed(obj, ctx, s = '') {
   const props = obj.props || {};
+  const words = wordsIn(ctx);
   const feed = ctx.feedFor?.(props) || { items: [], hasMore: false, chips: [], active: null };
   const layout = props.layout || 'grid';
   const chips = props.filter && feed.chips.length
-    ? chipRow(feed.chips, feed.active, ctx.path || '/') : '';
+    ? chipRow(feed.chips, feed.active, ctx.path || '/', words) : '';
 
   const body = feed.items.length
-    ? `<div class="${FEED_WRAP[layout] || 'card-grid'}" data-feed-items>${feedItems(feed.items, layout)}</div>`
-    : '<div class="placeholder-note">No published articles yet.</div>';
+    ? `<div class="${FEED_WRAP[layout] || 'card-grid'}" data-feed-items>${feedItems(feed.items, layout, words)}</div>`
+    : `<div class="placeholder-note">${esc(words.feedEmpty)}</div>`;
 
   /* `more` only means anything while there is more, so the control is not
      drawn on a feed that is already showing everything - a "Load more" that
@@ -444,7 +457,7 @@ function renderArticleFeed(obj, ctx, s = '') {
   const wantsMore = props.more === 'button' || props.more === 'scroll';
   const control = wantsMore && feed.hasMore
     ? (props.more === 'button'
-      ? `<div class="feed-more"><button class="btn" type="button" data-feed-more>Show more</button></div>`
+      ? `<div class="feed-more"><button class="btn" type="button" data-feed-more>${esc(words.showMore)}</button></div>`
       : '<div class="feed-more feed-more--auto" data-feed-more aria-hidden="true"></div>')
     : '';
 
@@ -458,7 +471,7 @@ function renderArticleFeed(obj, ctx, s = '') {
 }
 
 /** Frames 2.1 / 3.6 - the wide article band with the image on one side. */
-export function articleFeature(a, reverse = false) {
+export function articleFeature(a, reverse = false, words = siteWords()) {
   return `<article class="${cls('article-feature', reverse && 'article-feature--reverse')}">
     <div class="article-feature__media">
       ${articleImg(a, SIZES.feature)}
@@ -467,7 +480,7 @@ export function articleFeature(a, reverse = false) {
       ${a.category_name ? `<span class="tag">${esc(a.category_name)}</span>` : ''}
       <h2 class="block-subheader">${esc(a.title)}</h2>
       ${a.lead ? `<p class="article-feature__lead">${esc(a.lead)}</p>` : ''}
-      <div><a class="btn" href="${esc(articleHref(a))}">${esc(a.cta_label || 'Read more')}</a></div>
+      <div><a class="btn" href="${esc(articleHref(a))}">${esc(a.cta_label || words.readMore)}</a></div>
     </div>
   </article>`;
 }
@@ -506,14 +519,14 @@ export function articleCard(a) {
   </a>`;
 }
 
-export function articleRow(a) {
+export function articleRow(a, words = siteWords()) {
   return `<a class="article-row" href="${esc(articleHref(a))}">
     <time datetime="${esc(a.published_at || a.created_at)}">${esc(formatDate(a.published_at || a.created_at))}</time>
     <div>
       ${a.category_name ? `<span class="tag">${esc(a.category_name)}</span>` : ''}
       <h3>${esc(a.title)}</h3>
     </div>
-    <span class="textlink">Read more</span>
+    <span class="textlink">${esc(words.readMore)}</span>
   </a>`;
 }
 

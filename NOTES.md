@@ -113,6 +113,48 @@ half-done. Kept short.
 - Settings holds everything site-specific: name, address, language, country,
   one logo (with none set, the site shows its name), favicon, how people sign
   in, form recipient, footer, social links.
+- **The site's own words follow `site_language`; the CMS's do not.** The
+  setting used to do one thing - write the page's `lang` attribute - while
+  every word the site supplies for itself was an English string sitting in a
+  template. A Swedish site said "Read more" under its cards and "Page not
+  found" at a dead address, which is the one kind of wrong a reader is certain
+  to notice. `src/lib/words.js` is the dictionary: English, Swedish beside it,
+  reached through the context `buildContext` already builds, so a renderer
+  asks for a word rather than holding one.
+  - **Twenty-seven strings, and the line that decides membership** is whether
+    it is the *site* speaking or the author. "Read more", Send, the thank-you,
+    the password gate, the 404 - the site's. Anything an author typed is
+    theirs and is drawn exactly as typed, which is why a form's own
+    `submit_label` still beats the dictionary's Send.
+  - **aria-labels are words.** Main menu, Section menu, Breadcrumbs, Home,
+    Skip to content, Menu: what a screen reader says out loud. Leaving them
+    English is the same mistake as printing them, made to fewer people, and
+    they were not in the thirteen this job was scoped at.
+  - **Dates come with the language.** Each set carries a `locale` - `en-GB`,
+    `sv-SE` - and `formatDateLong` takes it, so an article dated
+    "23 September 2026" in English is "23 september 2026" in Swedish. A tag
+    that names its own region keeps it (`en-US` writes September 23, 2026);
+    a short date stays ISO in every language, which is what it was for.
+    `LOCALE` in `src/lib/util.js` is now explicitly the *CMS's* locale, and
+    the CMS's lists and schedules still format by it.
+  - **A language with no set of its own gets English furniture and an honest
+    `lang`.** A German site is German in the attribute, in the content and in
+    search results; only the couple of dozen words it never wrote are
+    English. The alternative - refusing the setting, or drawing blanks - is
+    worse at both ends. Matching is on the primary subtag, so `sv`, `sv-SE`
+    and `sv-FI` are all Swedish.
+  - **English sits underneath every other language**, so a word added and not
+    yet translated draws in English rather than as nothing. A test walks every
+    language and fails on anything that still reads in English, because that
+    fallback is a safety net and not a way of working.
+  - **What stayed English, deliberately:** the preview bar, the "this form has
+    been deleted" note (both only ever drawn for an author), the `/api/feed`
+    JSON errors (nobody reads them), and the empty-page notice - it says "Add
+    slices and objects to it in the CMS", so translating it means translating
+    *slice* and *object*, which is the CMS dictionary this is not.
+  - Found on the way: the form validator still said `(giltig e-post)`, a
+    Swedish string that survived every pass over this code because it only
+    appears when somebody mistypes an address.
 - Navigation is a single collapsible rail. No top bar.
 - **A page has two copies.** `content` is what the public sees; `draft_content`
   is what the editor writes. They part company the moment a live page is
@@ -1078,12 +1120,15 @@ What held up, tested rather than assumed:
     the weeks go, and none of it is made easier by choosing page-per-locale.
   - One deliberate escape hatch: a slice that belongs only to some locales,
     for the cases where the layout genuinely differs rather than the words.
-- **A language picker in the CMS, or a string dictionary.** The CMS and the
-  public site are both English, with their strings inline in the views. A
-  dictionary (`src/i18n/en.js`, with `t()` in `src/lib/i18n.js`) was
-  written for this once and deleted on 2026-09-22: nothing had imported it
-  since the article form moved onto the canvas, and with one language a
-  one-option selector would be noise.
+- **A language picker in the CMS, or a dictionary for the CMS's own words.**
+  The CMS interface is English and its strings sit inline in the views. A
+  dictionary for it (`src/i18n/en.js`, with `t()` in `src/lib/i18n.js`) was
+  written once and deleted on 2026-09-22: nothing had imported it since the
+  article form moved onto the canvas, and with one language a one-option
+  selector would be noise. That has not changed, and the *site's* dictionary
+  added on 2026-09-23 is not the first half of it - it exists because the site
+  has a language setting and the CMS does not. A unit test checks that no
+  screen under `src/routes/cms/` or `src/views/cms/` imports it.
 - **A code editor for page types.** The goal is right and worth building one
   day: making a *new* page type from the CMS rather than only choosing among
   the three. Pasting server-side source into a `<textarea>` is not the way to
@@ -1749,9 +1794,10 @@ What held up, tested rather than assumed:
     dashboard's tables were wider than their cards and the views column sat
     off the edge. Invisible on white, obvious on a dark card. That column's
     header was also still Swedish.
-- New interface wording is English and sits inline beside its neighbours, in
-  the CMS and on the public site alike. There is no dictionary to add it to
-  (see Deliberately not built).
+- New CMS wording is English and sits inline beside its neighbours; there is
+  no dictionary to add it to (see Deliberately not built). A word the *site*
+  says for itself is the other case and goes in `src/lib/words.js`, in every
+  language there, or a Swedish page starts speaking English mid-sentence.
 
 ## Running it
 
@@ -1759,7 +1805,7 @@ What held up, tested rather than assumed:
     AUTH_DISABLED=1 ./start.sh        # ...without the login, from this machine only
     THEME_DIR=/srv/my-theme ./start.sh  # ...serving a theme's files over www/assets
     ./scripts/autostart.sh install    # keep it running across logins
-    npm test            # 201 unit tests, the Express app's own among them
+    npm test            # 212 unit tests, the Express app's own among them
     npm run test:e2e    # 131 checks against a running stack, signing in for real
     SCHEDULE_WAIT=1 npm run test:e2e  # ...plus a minute's wait for the publishing clock
     npm run test:clean  # clear leftovers from an interrupted e2e run

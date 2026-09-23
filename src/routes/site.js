@@ -17,6 +17,7 @@ import { currentUser } from '../lib/auth.js';
 import { isUnlocked, passwordMatches, unlockCookie } from '../lib/gate.js';
 import { passwordGate } from '../views/gate.js';
 import * as settings from '../lib/settings.js';
+import { siteWords } from '../lib/words.js';
 import { EXTRA_MENU } from '../db/seed.js';
 
 /* ---------------------------------------------------------- page context */
@@ -49,6 +50,10 @@ export function buildContext(req, url) {
     user,
     path: url.pathname,
     lang,
+    // The site's own words, in the language the site is set to. Resolved once
+    // here so a renderer asks for a word rather than holding one - "Read more"
+    // is drawn in three places and decided in none of them.
+    words: siteWords(lang),
     // Read once here rather than in each route: a page can be rendered by a
     // plain view or by a form submit that comes back to it, and both have to
     // consult the same unlock cookie.
@@ -296,7 +301,7 @@ export function renderArticle(article, ctx) {
         ? `<div class="article-subjects">${article.categories.map(subject).join('')}</div>` : ''}
       <h1>${esc(article.title)}</h1>
       ${article.lead ? `<p class="page-header__lead">${esc(article.lead)}</p>` : ''}
-      <p class="article-meta">${esc(formatDateLong(article.published_at || article.created_at))}
+      <p class="article-meta">${esc(formatDateLong(article.published_at || article.created_at, ctx.words.locale))}
         ${article.author_name ? ` &middot; ${esc(article.author_name)}` : ''}</p>
     </header>
     ${article.image_filename ? `<figure class="article-hero">
@@ -308,7 +313,7 @@ export function renderArticle(article, ctx) {
       ? `<p style="margin-top:var(--s-6)"><a class="btn btn--accent" href="${esc(article.cta_url)}">${esc(article.cta_label)}</a></p>`
       : ''}
     ${related.length ? `<section style="margin-top:var(--s-9)">
-      <h2 class="block-header" style="margin-bottom:var(--s-5)">More to read</h2>
+      <h2 class="block-header" style="margin-bottom:var(--s-5)">${esc(ctx.words.moreToRead)}</h2>
       <div class="card-grid">${related.map(articleCard).join('')}</div></section>` : ''}
   </div>`;
 
@@ -367,7 +372,7 @@ export function registerSiteRoutes(router) {
       values[name] = raw;
       if (field.props.required && !raw) missing.push(field.props.label || name);
       if (field.kind === 'fieldEmail') {
-        if (raw && !isEmail(raw)) missing.push(`${field.props.label || name} (giltig e-post)`);
+        if (raw && !isEmail(raw)) missing.push(ctx.words.needsEmail(field.props.label || name));
         else if (raw && !replyTo) replyTo = raw;
       }
       /* A phone field answers with two controls, and what is stored is the
@@ -381,7 +386,7 @@ export function registerSiteRoutes(router) {
         values[`${name}_prefix`] = country;
         const joined = joinPhone(dialFor(country), raw);
         values[name] = joined;
-        if (raw && !isDiallable(joined)) missing.push(`${field.props.label || name} (a valid number)`);
+        if (raw && !isDiallable(joined)) missing.push(ctx.words.needsPhone(field.props.label || name));
       }
     }
 
@@ -389,15 +394,15 @@ export function registerSiteRoutes(router) {
     if (!definition.length || missing.length) {
       flash.formErrorId = placed.id;
       flash.formError = missing.length
-        ? `Please fill in: ${missing.join(', ')}.`
-        : 'This form has no fields yet.';
+        ? ctx.words.fillIn(missing.join(', '))
+        : ctx.words.formEmpty;
       return html(res, renderPage(page, { ...ctx, path: back }, flash));
     }
 
     const fallback = ctx.settings?.contact_email;
     const recipient = isEmail(form.recipient) ? form.recipient
       : (isEmail(fallback) ? fallback : config.mail.contactTo);
-    const subject = form.subject || form.name || 'Message from the website';
+    const subject = form.subject || form.name || ctx.words.mailSubject;
     const body = definition.map((field) => {
       const name = fieldKey(field);
       return `${field.props.label || name}: ${values[name] || '—'}`;
@@ -411,7 +416,7 @@ export function registerSiteRoutes(router) {
         const result = await sendMail({
           to: recipient,
           ...(replyTo ? { replyTo } : {}),
-          ...contactEmail({ subject, from: replyTo || 'unknown sender', message: body, page: back }),
+          ...contactEmail({ subject, from: replyTo || ctx.words.unknownSender, message: body, page: back }),
         });
         delivered = !!result.delivered;
       } catch (err) {
@@ -448,7 +453,7 @@ export function registerSiteRoutes(router) {
     const batch = feedFor(feed.props, ctx, offset);
 
     json(res, {
-      html: feedItems(batch.items, feed.props.layout),
+      html: feedItems(batch.items, feed.props.layout, ctx.words),
       more: batch.hasMore,
       count: batch.items.length,
     });
@@ -508,7 +513,7 @@ export function registerSiteRoutes(router) {
 
     const { fields } = await parseForm(req);
     if (!passwordMatches(page, fields.password)) {
-      return html(res, passwordGate(page, ctx, { error: 'Wrong password. Try again.' }), 403);
+      return html(res, passwordGate(page, ctx, { error: ctx.words.passwordWrong }), 403);
     }
     res.setHeader('Set-Cookie', unlockCookie(page.id, page.password, req));
     redirect(res, permalink);
@@ -518,13 +523,19 @@ export function registerSiteRoutes(router) {
 /* -------------------------------------------------------------------- 404 */
 
 export function notFound(res, ctx) {
+  /* The words are looked up again rather than only taken from the context,
+     because this is the one rendering that can happen without one - and the
+     page a lost visitor is most likely to see is a poor place for the site to
+     start speaking a language it does not otherwise speak. */
+  const site = ctx?.settings || settings.all();
+  const words = ctx?.words || siteWords(site.site_language);
   html(res, siteLayout({
-    title: 'Page not found',
+    title: words.notFound,
     content: `<div class="body-col"><div class="empty-state" style="margin-block:var(--s-9)">
-      <h2>Page not found</h2>
-      <p>There is nothing at this address, or the page is not published yet.</p>
-      <p><a class="btn" href="/">Go to the home page</a></p>
+      <h2>${esc(words.notFound)}</h2>
+      <p>${esc(words.notFoundNote)}</p>
+      <p><a class="btn" href="/">${esc(words.goHome)}</a></p>
     </div></div>`,
-    ctx: ctx || { mainTree: [], extraTree: [], footerTree: [], path: '/', settings: settings.all() },
+    ctx: ctx || { mainTree: [], extraTree: [], footerTree: [], path: '/', settings: site, words },
   }), 404);
 }

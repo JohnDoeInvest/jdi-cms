@@ -5,6 +5,7 @@ import { config } from '../config.js';
 import { asset } from '../lib/assets.js';
 import { theme, themeCss } from '../lib/theme.js';
 import { pictureHtml } from '../lib/media.js';
+import { siteWords } from '../lib/words.js';
 
 /* --------------------------------------------------------------- menus */
 
@@ -13,7 +14,7 @@ const isActive = (node, path) =>
   || (node.href && node.href !== '/' && path.startsWith(node.href + '/'))
   || (node.children || []).some((child) => isActive(child, path));
 
-function mainMenu(tree, path) {
+function mainMenu(tree, path, words) {
   if (!tree?.length) return '';
   const items = tree.map((node) => {
     const children = node.children || [];
@@ -23,7 +24,7 @@ function mainMenu(tree, path) {
         `<a href="${esc(child.href || '#')}">${esc(child.label)}</a>`).join('')}</div>` : ''}
     </li>`;
   });
-  return `<nav class="mainmenu" aria-label="Main menu"><ul class="mainmenu__list">${items.join('')}</ul></nav>`;
+  return `<nav class="mainmenu" aria-label="${esc(words.mainMenu)}"><ul class="mainmenu__list">${items.join('')}</ul></nav>`;
 }
 
 function extraMenu(tree, path) {
@@ -32,9 +33,9 @@ function extraMenu(tree, path) {
     `<li><a href="${esc(node.href || '#')}"${isActive(node, path) ? ' aria-current="page"' : ''}>${esc(node.label)}</a></li>`).join('')}</ul>`;
 }
 
-function subMenu(tree, path) {
+function subMenu(tree, path, words = siteWords()) {
   if (!tree?.length) return '';
-  return `<nav class="submenu" aria-label="Section menu"><div class="shell"><ul class="submenu__list">${
+  return `<nav class="submenu" aria-label="${esc(words.sectionMenu)}"><div class="shell"><ul class="submenu__list">${
     tree.map((node) => `<li class="${cls(isActive(node, path) && 'is-active')}">
       <a href="${esc(node.href || '#')}">${esc(node.label)}</a></li>`).join('')
   }</ul></div></nav>`;
@@ -61,7 +62,12 @@ function footerBase(settings, siteName) {
   </div>`;
 }
 
-function breadcrumbs(trail) {
+/*
+ * An aria-label is a word too: it is what a screen reader says out loud, so
+ * announcing "Breadcrumbs" on a Swedish site is the same mistake as printing
+ * it on the page - just one only some visitors are told about.
+ */
+function breadcrumbs(trail, words = siteWords()) {
   if (!trail?.length) return '';
   const parts = trail.map((crumb, i) => {
     const last = i === trail.length - 1;
@@ -70,8 +76,8 @@ function breadcrumbs(trail) {
       : `<a href="${esc(crumb.href)}">${esc(crumb.label)}</a>`;
     return `<span class="breadcrumbs__sep">${icon('chevronRight', 12)}</span>${label}`;
   });
-  return `<nav class="breadcrumbs" aria-label="Breadcrumbs">
-    <a href="/" aria-label="Home">${icon('home', 15)}</a>${parts.join('')}
+  return `<nav class="breadcrumbs" aria-label="${esc(words.breadcrumbs)}">
+    <a href="/" aria-label="${esc(words.home)}">${icon('home', 15)}</a>${parts.join('')}
   </nav>`;
 }
 
@@ -93,6 +99,7 @@ export function siteLayout({
   const { mainTree = [], extraTree = [], footerTree = [], path = '/', settings = {} } = ctx || {};
   const siteName = settings.site_name || 'Site';
   const lang = ctx?.lang || settings.site_language || config.defaultLang;
+  const words = ctx?.words || siteWords(lang);
   // Avoid "Site name | Site name" on the landing page.
   const fullTitle = !title || title === siteName ? siteName : `${title} | ${siteName}`;
   // A raster logo is WebP, so it comes with its fallback; an SVG is just itself.
@@ -132,7 +139,7 @@ ${canonical ? `<link rel="canonical" href="${esc(canonical)}">` : ''}
 <style>${themeCss(siteTheme)}</style>
 </head>
 <body class="${esc(bodyClass)}">
-<a class="visually-hidden" href="#main">Skip to content</a>
+<a class="visually-hidden" href="#main">${esc(words.skipToContent)}</a>
 ${banner}
 
 <header class="topbar" data-topbar>
@@ -140,20 +147,20 @@ ${banner}
     <a class="topbar__logo" href="/" aria-label="${esc(siteName)}">
       ${logoImg}
     </a>
-    <button class="topbar__toggle" type="button" data-menu-toggle aria-expanded="false" aria-label="Menu">
+    <button class="topbar__toggle" type="button" data-menu-toggle aria-expanded="false" aria-label="${esc(words.menu)}">
       ${icon('menu', 36, 'topbar__toggle-open')}${icon('close', 32, 'topbar__toggle-close')}
     </button>
     <div class="topbar__extra">
       ${extraMenu(extraTree, path)}
     </div>
-    ${mainMenu(mainTree, path)}
+    ${mainMenu(mainTree, path, words)}
   </div>
 </header>
 
-${submenu ? subMenu(submenu, path) : ''}
+${submenu ? subMenu(submenu, path, words) : ''}
 
 <main class="main" id="main">
-  ${trail ? `<div class="body-col">${breadcrumbs(trail)}</div>` : ''}
+  ${trail ? `<div class="body-col">${breadcrumbs(trail, words)}</div>` : ''}
   ${content}
 </main>
 
