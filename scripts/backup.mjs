@@ -10,7 +10,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { buildBackup } from '../src/lib/backup.js';
-import { config } from '../src/config.js';
 
 let made;
 try {
@@ -25,10 +24,12 @@ const out = path.resolve(process.argv[2] || made.filename);
 fs.writeFileSync(out, made.data);
 
 const mb = (n) => `${(n / 1048576).toFixed(1)} MB`;
-const { rows, files } = made.summary;
+const { rows, files, themeFiles } = made.summary;
 console.log(`\n  ${path.relative(process.cwd(), out) || out}`);
 console.log(`  ${'-'.repeat(58)}`);
 console.log(`  database   ${Object.entries(rows).map(([t, n]) => `${n} ${t}`).join(', ')}`);
 console.log(`  uploads    ${files} files`);
-if (config.paths.theme) console.log(`  theme      ${config.paths.theme} — send this separately`);
+console.log(themeFiles
+  ? `  theme      ${themeFiles} files, restored to theme/`
+  : '  theme      none of its own — the default');
 console.log(`  archive    ${mb(made.data.length)}\n`);
