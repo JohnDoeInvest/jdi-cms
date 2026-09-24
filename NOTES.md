@@ -1101,6 +1101,35 @@ half-done. Kept short.
   puts one back. Not urgent, and written down because the two halves turn out
   to be different features wearing the same clothes.
 
+  **What it is actually for, in the asker's words** (worth keeping, because it
+  is a better reason than convenience): the content has to be handed to
+  somebody else - an admin doing a deploy - and *"humans having the patience
+  to actually read such files is flaky at best"*. A README that says which
+  files to copy is a instruction somebody has to follow correctly, every time,
+  under time pressure. An archive is a thing that either arrived or did not.
+
+  The complaint underneath it is precise and this repo earns it:
+  **the folders hold more than the parts that travel.** `data/` has the
+  database but also `outbox/` and `logs/`; `www/` has `media/` and `fonts/`
+  but also `assets/`, which is the repository. So "copy data and www" is
+  wrong in both directions, and the correct instruction is four paths with
+  two exclusions - exactly the shape that turns into a sequence of "file X
+  goes in folder Y" and loses one.
+
+  **So the archive should mirror the destination paths**, not invent its own
+  layout:
+
+      smartare-mat-2026-09-24.zip
+      ├── manifest.json     what this is, and what it came from
+      ├── data/cms.db
+      └── www/media/…, www/fonts/…
+
+  Unpacked at the root of a deployment, every file lands where it belongs and
+  there is no step to get wrong. The structure carries the instruction, which
+  is the only kind of instruction that survives being handed over. A
+  `README.txt` beside the manifest is then a courtesy rather than the
+  mechanism.
+
   **It fits this codebase unusually well**, because the separation it needs
   already exists. A site's content is exactly three things - `data/cms.db`,
   `www/media/` and `www/fonts/` - and everything else is the repository (see
