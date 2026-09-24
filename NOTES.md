@@ -244,6 +244,21 @@ half-done. Kept short.
   where you looked. The old values are read on the way in and keep their
   appearance exactly. Outlined is transparent, not white, so it works on a
   coloured band as readily as on the page.
+- **A button and a link can be asked to open in a new tab** (2026-09-24), as a
+  checkbox under the Link field in both panels. Off unless it is asked for, so
+  nothing already on a page changes behaviour, and off is the right default
+  anyway: taking over a visitor's tab management is a decision rather than a
+  convenience.
+  - **`target` never travels alone.** It goes out as
+    `rel="noopener noreferrer"`, which is not decoration - without `noopener`
+    the page that opens can reach back through `window.opener` and navigate
+    the tab it came from. The pair is the one `sanitizeHtml` already adds to
+    an author's own `target="_blank"` link, so the same link behaves the same
+    whether it was typed into a Text object or made as a Link object. That
+    precedent is why there was nothing to decide here.
+  - The canvas needs no change: it draws the label in a `<span>`, not an
+    anchor, so where the link opens is not something it can show. The
+    checkbox is the whole of the interface.
 - **Alignment is three buttons and a colour is its own swatch.** Both used to
   be dropdowns, which made the two commonest settings in the panel cost two
   clicks and a read — and a colour named "Stone" in a list asks you to remember

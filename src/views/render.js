@@ -138,12 +138,13 @@ export function renderObject(obj, ctx) {
     case 'button':
       return props.label
         ? `<div class="b-button${align}"${s}><a class="${buttonClasses(props)}"
-            href="${esc(props.href || '#')}">${esc(props.label)}</a></div>`
+            href="${esc(props.href || '#')}"${newTabAttrs(props)}>${esc(props.label)}</a></div>`
         : '';
 
     case 'link':
       return props.label
-        ? `<div class="b-link${align}"${s}><a class="b-link__el" href="${esc(props.href || '#')}">${esc(props.label)}</a></div>`
+        ? `<div class="b-link${align}"${s}><a class="b-link__el" href="${esc(props.href || '#')}"${
+            newTabAttrs(props)}>${esc(props.label)}</a></div>`
         : '';
 
     case 'quote':
@@ -196,6 +197,18 @@ const buttonClasses = (p = {}) => cls('b-button__el',
   p.colour && `b-button__el--c-${p.colour}`,
   p.outline && 'b-button__el--outline',
   p.buttonSize && p.buttonSize !== 'medium' && `b-button__el--${p.buttonSize}`);
+
+/**
+ * What "Open in new tab" puts on the anchor.
+ *
+ * `rel` is not optional beside `target="_blank"`: without `noopener` the page
+ * that opens can reach back through `window.opener` and navigate the tab it
+ * came from. `noreferrer` rides along because that is the pair the rich-text
+ * sanitiser already adds to an author's own link (see src/lib/html.js), and a
+ * link typed into a Text object should not behave differently from the same
+ * link made as a Link object.
+ */
+const newTabAttrs = (p = {}) => (p.newTab ? ' target="_blank" rel="noopener noreferrer"' : '');
 
 /* ------------------------------------------------------------------ forms */
 

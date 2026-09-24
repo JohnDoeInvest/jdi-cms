@@ -1380,6 +1380,44 @@ test('a button takes a theme colour, and outline turns it into the edge', () => 
     .props.colour, '');
 });
 
+test('a button or a link can be asked to open in a new tab', () => {
+  const draw = (kind, props) => renderObject(normalizeObjects([{ kind, props }])[0], {});
+
+  for (const kind of ['button', 'link']) {
+    const opened = draw(kind, { label: 'Go', href: 'https://example.com', newTab: true });
+    assert.match(opened, /target="_blank"/, kind);
+    /* Never `target` on its own: without `noopener` the page that opens can
+       reach back through `window.opener` and navigate the tab it came from.
+       `noreferrer` matches what the rich-text sanitiser adds to an author's
+       own link, so the same link behaves the same made either way. */
+    assert.match(opened, /rel="noopener noreferrer"/, kind);
+
+    // Off, and unset, are the same thing: no attributes at all.
+    for (const props of [{ label: 'Go', href: '/x', newTab: false }, { label: 'Go', href: '/x' }]) {
+      const stays = draw(kind, props);
+      assert.doesNotMatch(stays, /target=/, kind);
+      assert.doesNotMatch(stays, /rel=/, kind);
+    }
+  }
+});
+
+test('a button or a link written before the new-tab switch existed stays put', () => {
+  /* The stored shape gains a `false`, which is what the panel needs to show a
+     cleared checkbox - but nothing already on a page starts opening tabs. */
+  for (const kind of ['button', 'link']) {
+    const [obj] = normalizeObjects([{ kind, props: { label: 'x', href: '/y' } }]);
+    assert.equal(obj.props.newTab, false, kind);
+    assert.doesNotMatch(renderObject(obj, {}), /target=/, kind);
+  }
+  // Anything truthy but the string "false" turns it on, as the other switches do.
+  const on = (v) => normalizeObjects([{ kind: 'link', props: { label: 'x', newTab: v } }])[0].props.newTab;
+  assert.equal(on('false'), false);
+  assert.equal(on(''), false);
+  assert.equal(on(undefined), false);
+  assert.equal(on(true), true);
+  assert.equal(on('on'), true);
+});
+
 test('a button written as a variant keeps the look it had', () => {
   const props = (variant) => normalizeObjects([{ kind: 'button', props: { label: 'x', variant } }])[0].props;
   // Accent was the one filled style.

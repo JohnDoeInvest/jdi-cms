@@ -186,8 +186,8 @@
       case 'heading':  o.props = { text: '', level: 'h2', headingSize: 'large', align: 'left', ink: '', anchor: '' }; break;
       case 'text':     o.props = { html: '', align: 'left', ink: '' }; break;
       case 'image':    o.props = { media: null, caption: '', href: '', alt: '', align: 'left' }; break;
-      case 'button':   o.props = { label: 'Button', href: '', colour: '', outline: true, buttonSize: 'medium', align: 'left' }; break;
-      case 'link':     o.props = { label: 'Link', href: '', align: 'left' }; break;
+      case 'button':   o.props = { label: 'Button', href: '', newTab: false, colour: '', outline: true, buttonSize: 'medium', align: 'left' }; break;
+      case 'link':     o.props = { label: 'Link', href: '', newTab: false, align: 'left' }; break;
       case 'quote':    o.props = { text: '', source: '', align: 'left', ink: '' }; break;
       case 'spacer':   o.props = { height: 32 }; break;
       case 'breadcrumbs': o.props = { align: 'left' }; break;
@@ -1644,6 +1644,7 @@
               'Stacks to one column on a phone');
       case 'button':
         return pLink(id, p.href, 'Link')
+          + pCheck(id, 'newTab', p.newTab, 'Open in new tab')
           + pSwatches(id, 'colour', p.colour, 'Colour',
             '', 'Plain \u2014 the theme\u2019s default outline')
           + pCheck(id, 'outline', p.outline, 'Outline only')
@@ -1651,6 +1652,7 @@
           + pAlign(id, p.align, 'Alignment');
       case 'link':
         return pLink(id, p.href, 'Link')
+          + pCheck(id, 'newTab', p.newTab, 'Open in new tab')
           + pAlign(id, p.align, 'Alignment');
       case 'quote':
         return pInput(id, 'source', p.source, 'Attribution')

@@ -30,9 +30,9 @@ export const OBJECTS = {
   image:    { label: 'Image',        icon: 'image',     content: 'media',
               fields: ['media', 'caption', 'href', 'alt', 'size', 'radius', 'align'] },
   button:   { label: 'Button',       icon: 'button',    content: 'label',
-              fields: ['label', 'href', 'colour', 'outline', 'buttonSize', 'align'] },
+              fields: ['label', 'href', 'newTab', 'colour', 'outline', 'buttonSize', 'align'] },
   link:     { label: 'Link',         icon: 'link',      content: 'label',
-              fields: ['label', 'href', 'align'] },
+              fields: ['label', 'href', 'newTab', 'align'] },
   quote:    { label: 'Quote',        icon: 'quote',     content: 'text',
               fields: ['text', 'source', 'align', 'ink'] },
   table:    { label: 'Table',        icon: 'table',
@@ -341,6 +341,11 @@ function normalizeProps(kind, raw = {}) {
       case 'label':   p.label = clean(raw.label, 200); break;
       case 'heading': p.heading = clean(raw.heading, 300); break;
       case 'href':    p.href = clean(raw.href, 1000); break;
+      /* Whether the link leaves this tab. Off unless it was asked for, so
+         every button and link written before this existed keeps behaving as
+         it did - and off is the right default anyway: taking over a visitor's
+         tab management is a decision, not a convenience. */
+      case 'newTab':  p.newTab = !!raw.newTab && raw.newTab !== 'false'; break;
       /* Code is shown, never run: it is escaped on the way out like any other
          text, so the only thing to decide here is how much of it to keep. */
       case 'code':     p.code = clean(raw.code, 20000); break;
