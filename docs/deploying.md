@@ -40,8 +40,40 @@ A hop count in `TRUST_PROXY` (`1`) is only safe when nothing can reach Node
 except through that proxy — bind `HOST=127.0.0.1` — or a visitor can name
 their own address.
 
-Back up `data/cms.db`, `www/media/` and `www/fonts/`. They are the whole of an
-installation's content; everything else is this repository.
+## Backing a site up, and moving one
+
+`data/cms.db`, `www/media/` and any *uploaded* typefaces are the whole of an
+installation's content; everything else is this repository. The folders they
+live in hold other things too — `data/outbox/`, `data/logs/`, `www/assets/`,
+the typefaces that ship with the repo — so "copy `data` and `www`" is wrong
+in both directions.
+
+```bash
+npm run backup                    # ./<site>-2026-09-24.zip
+npm run backup -- /backups/x.zip  # somewhere of your choosing
+```
+
+Safe against a live site: the database is copied with `VACUUM INTO`, which is
+consistent while the server has the file open. Copying `cms.db` by hand while
+the server runs is *not* — a running site keeps a write-ahead log beside it,
+and the copy silently lacks the newest content.
+
+**The paths inside the archive mirror the destination**, so moving a site is:
+
+```bash
+git clone <this repository> newsite && cd newsite
+unzip ~/site-2026-09-24.zip      # every file lands where it belongs
+./start.sh
+```
+
+`manifest.json` inside carries the row counts it was taken with, the commit
+of the CMS it came off, and — because a theme lives *outside* the
+installation — which `THEME_DIR` was in use. A site restored without its
+theme comes up in the neutral default one and looks broken rather than unset.
+
+A backup is refused if the database does not pass its own `integrity_check`,
+on the grounds that a corrupt backup is the kind you find out about when you
+need it.
 
 ## Keeping it running
 

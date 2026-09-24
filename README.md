@@ -224,6 +224,7 @@ npm test             # unit tests, including the Express app itself
 npm run test:e2e     # against a running server: E2E_EMAIL=… E2E_PASSWORD=… npm run test:e2e
 npm run test:clean   # clear what an interrupted e2e run left behind
 npm run reset        # wipe the database and seed it again (refuses while the server is up)
+npm run backup       # everything this site holds that the repo does not, as one .zip
 ```
 
 ```

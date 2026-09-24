@@ -1164,13 +1164,30 @@ half-done. Kept short.
   the ceiling comment in config.js already names streaming as the fix when it
   bites. This is what would make it bite.
 
-  ### Backup is easy and should ship on its own
+  ### Backup is easy and should ship on its own — and now has (2026-09-24)
 
-  Read-only, so it cannot break anything: `VACUUM INTO` a temp file, walk the
-  two folders, add a `manifest.json` (schema version, the commit the CMS was
-  on, site name, date, row counts), send it as
-  `smartare-mat-2026-09-24.zip`. That is most of the value, and today the
-  backup story is "an old folder happens to still be sitting there".
+  `npm run backup`, as `scripts/backup.mjs`, with the ZIP writer as
+  `src/lib/zip.js` so the CMS button later calls the same code rather than a
+  second copy of it. Read-only, so it cannot break anything.
+
+  - **What it excludes is the point**, and it asks git rather than holding a
+    list: anything tracked under `www/media` or `www/fonts` ships with the
+    repo (the four Inter files, `.gitkeep`) and is left out, so a typeface
+    added to the repo next year is excluded next year without anyone
+    remembering this script exists. Without git it excludes nothing, which
+    errs towards a spare file rather than a missing upload.
+  - **It names the theme it cannot carry.** A theme lives outside the
+    installation, so the manifest and the README say which `THEME_DIR` was in
+    use - a site restored without its theme comes up in the neutral default
+    and looks broken rather than unset, which is a bad half-hour for whoever
+    receives it.
+  - **It refuses to write a backup of a database that fails
+    `integrity_check`.** A corrupt backup is worse than none: it is the one
+    you find out about when you need it.
+  - Proven end to end on a live site rather than a fixture: archive taken
+    while the server was up, unpacked into a fresh clone, booted, and
+    **17 of 18 pages byte-identical** to the running original - the one
+    difference being a feed that picks at random.
 
   ### Restore is three features, and the asking word hides which
 

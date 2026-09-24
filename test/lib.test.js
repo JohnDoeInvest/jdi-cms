@@ -29,6 +29,9 @@ import { sniffFont, guessFace, fontFaceCss, stackFor } from '../src/lib/fonts.js
 import { relativeDate, scheduleDate, parsePublishAt, parsePublishedOn, localDay } from '../src/lib/util.js';
 import { statusPill, editorActions, addressState, scheduleCell } from '../src/views/cms/parts.js';
 import { readFileSync } from 'node:fs';
+import zlib from 'node:zlib';
+import { randomBytes } from 'node:crypto';
+import { zip, crc32 } from '../src/lib/zip.js';
 import { loginView } from '../src/views/auth.js';
 import { cmsLayout } from '../src/views/cms/layout.js';
 import { siteWords, LANGUAGES } from '../src/lib/words.js';
@@ -2203,4 +2206,90 @@ test('the CMS has no dictionary, and is not quietly growing one', () => {
     const src = readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
     assert.ok(!/words\.js/.test(src), `${file} imports the site's dictionary`);
   }
+});
+
+
+/* ------------------------------------------------------------------- zip */
+
+/** Read an archive back far enough to check it says what it should. */
+const readZip = (buf) => {
+  // An empty archive is nothing but the end record, so index 0 is legal.
+  const end = buf.lastIndexOf(Buffer.from([0x50, 0x4b, 0x05, 0x06]));
+  assert.ok(end >= 0, 'no end-of-central-directory record');
+  const count = buf.readUInt16LE(end + 10);
+  const dirAt = buf.readUInt32LE(end + 16);
+  const entries = [];
+  let at = dirAt;
+  for (let i = 0; i < count; i++) {
+    assert.equal(buf.readUInt32LE(at), 0x02014b50, 'central header signature');
+    const method = buf.readUInt16LE(at + 10);
+    const sum = buf.readUInt32LE(at + 16);
+    const compressed = buf.readUInt32LE(at + 20);
+    const size = buf.readUInt32LE(at + 24);
+    const nameLen = buf.readUInt16LE(at + 28);
+    const offset = buf.readUInt32LE(at + 42);
+    const name = buf.slice(at + 46, at + 46 + nameLen).toString('utf8');
+    // Follow the offset to the local header and take the bytes back out.
+    assert.equal(buf.readUInt32LE(offset), 0x04034b50, `local header for ${name}`);
+    const localNameLen = buf.readUInt16LE(offset + 26);
+    const extraLen = buf.readUInt16LE(offset + 28);
+    const bodyAt = offset + 30 + localNameLen + extraLen;
+    const body = buf.slice(bodyAt, bodyAt + compressed);
+    entries.push({ name, method, sum, size, data: method === 8 ? zlib.inflateRawSync(body) : body });
+    at += 46 + nameLen + buf.readUInt16LE(at + 30) + buf.readUInt16LE(at + 32);
+  }
+  return entries;
+};
+
+test('crc32 matches the check value every implementation agrees on', () => {
+  // The standard vector: "123456789" is 0xcbf43926. A wrong table produces an
+  // archive that unpacks and then reports itself corrupt, which is worse than
+  // one that fails outright.
+  assert.equal(crc32(Buffer.from('123456789')), 0xcbf43926);
+  assert.equal(crc32(Buffer.alloc(0)), 0);
+});
+
+test('an archive round-trips its entries, names and bytes', () => {
+  const files = [
+    { name: 'manifest.json', data: Buffer.from('{"format":"slice-backup/1"}') },
+    { name: 'data/cms.db', data: Buffer.from('x'.repeat(5000)) },
+    { name: 'www/media/bild-å.svg', data: Buffer.from('<svg>Ärende</svg>', 'utf8') },
+  ];
+  const out = readZip(zip(files));
+  assert.equal(out.length, 3);
+  assert.deepEqual(out.map((e) => e.name), files.map((f) => f.name));
+  for (const [i, entry] of out.entries()) {
+    assert.deepEqual(entry.data, files[i].data, entry.name);
+    assert.equal(entry.size, files[i].data.length);
+    assert.equal(entry.sum, crc32(files[i].data));
+  }
+});
+
+test('what does not compress is stored rather than grown', () => {
+  /* A WebP or a woff2 comes out of deflate larger than it went in. Storing it
+     saves the bytes and the time, and an archive of a media folder is almost
+     entirely this case. */
+  const random = randomBytes(4096);
+  const [stored] = readZip(zip([{ name: 'photo.webp', data: random }]));
+  assert.equal(stored.method, 0, 'incompressible data should be stored');
+  assert.deepEqual(stored.data, random);
+
+  const [deflated] = readZip(zip([{ name: 'page.html', data: Buffer.from('a'.repeat(4096)) }]));
+  assert.equal(deflated.method, 8, 'repetitive data should deflate');
+});
+
+test('an empty archive and an empty file are both legal', () => {
+  // Both happen: a site with no uploads, and a zero-byte file in the library.
+  assert.deepEqual(readZip(zip([])), []);
+  const [empty] = readZip(zip([{ name: 'empty.txt', data: Buffer.alloc(0) }]));
+  assert.equal(empty.size, 0);
+  assert.equal(empty.data.length, 0);
+});
+
+test('a name is stored with forward slashes and flagged as UTF-8', () => {
+  const buf = zip([{ name: 'www\\media\\x.png', data: Buffer.from('x') }]);
+  assert.equal(readZip(buf)[0].name, 'www/media/x.png');
+  // Bit 11 of the flags says the name is UTF-8; without it "å" is mojibake
+  // on the other end.
+  assert.equal(buf.readUInt16LE(6) & 0x0800, 0x0800);
 });
