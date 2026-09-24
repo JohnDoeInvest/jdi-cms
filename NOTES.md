@@ -1096,6 +1096,88 @@ half-done. Kept short.
     markup would need the menu as data, which is a second, larger question.
 
 
+- **Backup and restore from the CMS itself.** Asked for on 2026-09-24: a
+  button that hands you an archive of the site's content, and an upload that
+  puts one back. Not urgent, and written down because the two halves turn out
+  to be different features wearing the same clothes.
+
+  **It fits this codebase unusually well**, because the separation it needs
+  already exists. A site's content is exactly three things - `data/cms.db`,
+  `www/media/` and `www/fonts/` - and everything else is the repository (see
+  CLAUDE.md, "Not in this repo"). There is nothing to untangle first. It is
+  also the other half of the pair we spent two days drawing: the repo carries
+  the code, `git pull` updates it, and *nothing* carries the content. This is
+  the thing that would.
+
+  ### Both unknowns were settled before writing this down
+
+  - **A consistent database copy from inside the running app**, which is the
+    subtle one - a live site keeps a WAL beside the `.db`, and copying the
+    file alone silently loses the newest content (learned the hard way during
+    the smartaremat cutover, where the fix was stopping the server first).
+    `VACUUM INTO` is the answer and it is one line: run against the live
+    smartaremat database with its server attached, it produced a consistent,
+    `integrity_check`-clean snapshot in **5ms**. No stopping anything.
+  - **A `.zip` with no fourth npm package.** `node:zlib` has `deflateRawSync`;
+    what is missing is the container and a CRC32, which together came to
+    about **55 lines** in a prototype. It wrote an archive `unzip -t` accepts
+    and a database that came back out of it with integrity intact. So the
+    house rule survives. Worth knowing this cuts the other way from the
+    *theme* file question, where the answer was "JSON, do not build a zip" -
+    there the payload was thirty strings, here it is tens of megabytes of
+    binary.
+
+  **Size, measured on a real site:** 48 MB of media, 660 KB of database,
+  144 KB of fonts. The database compresses about 9:1 and the media not at all
+  (it is already WebP), so an archive is roughly the size of the media folder.
+  A download is fine. An *upload* of the same is the biggest body this app
+  would ever take, and `src/lib/http.js` buffers request bodies in memory -
+  the ceiling comment in config.js already names streaming as the fix when it
+  bites. This is what would make it bite.
+
+  ### Backup is easy and should ship on its own
+
+  Read-only, so it cannot break anything: `VACUUM INTO` a temp file, walk the
+  two folders, add a `manifest.json` (schema version, the commit the CMS was
+  on, site name, date, row counts), send it as
+  `smartare-mat-2026-09-24.zip`. That is most of the value, and today the
+  backup story is "an old folder happens to still be sitting there".
+
+  ### Restore is three features, and the asking word hides which
+
+  Not the mirror image of backup, and this is the part worth arguing before
+  anybody builds it.
+
+  - **It destroys.** Backup reads; restore replaces a working site.
+  - **It takes untrusted input.** An uploaded archive is attacker-controlled:
+    an entry named `../../src/server.js` is the whole game. Names have to be
+    validated rather than joined - the standard is already set by the
+    traversal tests on `/media`, `/assets` and a theme folder.
+  - **It is not atomic.** A database and hundreds of files, and half a restore
+    is worse than none: unpack to a staging folder, verify, swap, and keep
+    what was there until the new one has proved itself.
+  - **It replaces the users table, including whoever clicked the button.**
+    Their session then belongs to a database that no longer knows them. That
+    has to be decided rather than discovered.
+  - **Version skew has a safe direction and an unsafe one.** An older archive
+    migrates itself on open - proven, that is exactly what the smartaremat
+    deployment did. A *newer* archive into an older CMS is the one to refuse,
+    and the manifest is what makes refusing possible.
+
+  **The risk is entirely in overwriting**, which is why it should be split:
+
+  1. **Backup.** Read-only. Ship first.
+  2. **Restore into an empty install.** `/cms/setup` takes an archive instead
+     of making an admin. Nearly harmless - there is nothing to destroy - and
+     it is what you actually want most of the time: moving to a server,
+     standing a copy up to test against, handing a site to somebody.
+  3. **Restore over a populated site.** Last, admin only, a typed
+     confirmation, staged and reversible, and it takes a backup of its own
+     first. The one that earns the ceremony.
+
+  Answering the question as asked: the simplification is right for the first
+  two and hides teeth in the third.
+
 - **Forms, before this is packaged.** The screen works and is in use, but two
   things were noticed and not settled:
   - A form can hold a Heading, Text, Divider and Spacer as well as fields.
