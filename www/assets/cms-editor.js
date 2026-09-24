@@ -185,7 +185,7 @@
     switch (kind) {
       case 'heading':  o.props = { text: '', level: 'h2', headingSize: 'large', align: 'left', ink: '', anchor: '' }; break;
       case 'text':     o.props = { html: '', align: 'left', ink: '' }; break;
-      case 'image':    o.props = { media: null, caption: '', href: '', alt: '', align: 'left' }; break;
+      case 'image':    o.props = { media: null, caption: '', href: '', newTab: false, alt: '', align: 'left' }; break;
       case 'button':   o.props = { label: 'Button', href: '', newTab: false, colour: '', outline: true, buttonSize: 'medium', align: 'left' }; break;
       case 'link':     o.props = { label: 'Link', href: '', newTab: false, align: 'left' }; break;
       case 'quote':    o.props = { text: '', source: '', align: 'left', ink: '' }; break;
@@ -1631,6 +1631,7 @@
         return pInput(id, 'alt', p.alt, 'Alt text', 'Describes the image for screen readers')
           + pInput(id, 'caption', p.caption, 'Caption')
           + pLink(id, p.href, 'Link', 'Makes the image clickable')
+          + pCheck(id, 'newTab', p.newTab, 'Open in new tab')
           + pSelect(id, 'size', p.size || 'full', IMAGE_SIZES, 'Display size',
               'Never wider than its column, whatever the upload measures')
           + pSelect(id, 'radius', p.radius || 'large', RADII, 'Corners',

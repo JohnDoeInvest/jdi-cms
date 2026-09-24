@@ -28,7 +28,7 @@ export const OBJECTS = {
   text:     { label: 'Text',         icon: 'paragraph', content: 'html',
               fields: ['html', 'textSize', 'align', 'ink'] },
   image:    { label: 'Image',        icon: 'image',     content: 'media',
-              fields: ['media', 'caption', 'href', 'alt', 'size', 'radius', 'align'] },
+              fields: ['media', 'caption', 'href', 'newTab', 'alt', 'size', 'radius', 'align'] },
   button:   { label: 'Button',       icon: 'button',    content: 'label',
               fields: ['label', 'href', 'newTab', 'colour', 'outline', 'buttonSize', 'align'] },
   link:     { label: 'Link',         icon: 'link',      content: 'label',

@@ -1401,6 +1401,20 @@ test('a button or a link can be asked to open in a new tab', () => {
   }
 });
 
+test('a linked image opens in a new tab on the same switch', () => {
+  /* An image is a link too when it carries one, and it is the *wrapper* that
+     has to take the attributes - the picture inside is not the anchor. */
+  const media = new Map([[7, { id: 7, filename: 'a.webp', mime: 'image/webp', variants: '', alt: '' }]]);
+  const draw = (props) => renderObject(
+    normalizeObjects([{ kind: 'image', props: { media: 7, ...props } }])[0], { media });
+
+  const opened = draw({ href: 'https://example.com', newTab: true });
+  assert.match(opened, /<a href="https:\/\/example\.com" target="_blank" rel="noopener noreferrer">/);
+  assert.doesNotMatch(draw({ href: 'https://example.com' }), /target=/);
+  // Ticked with no link to open, there is simply no anchor to put it on.
+  assert.doesNotMatch(draw({ newTab: true }), /<a /);
+});
+
 test('a button or a link written before the new-tab switch existed stays put', () => {
   /* The stored shape gains a `false`, which is what the panel needs to show a
      cleared checkbox - but nothing already on a page starts opening tabs. */
@@ -1409,6 +1423,8 @@ test('a button or a link written before the new-tab switch existed stays put', (
     assert.equal(obj.props.newTab, false, kind);
     assert.doesNotMatch(renderObject(obj, {}), /target=/, kind);
   }
+  const [img] = normalizeObjects([{ kind: 'image', props: { media: 3, href: '/y' } }]);
+  assert.equal(img.props.newTab, false);
   // Anything truthy but the string "false" turns it on, as the other switches do.
   const on = (v) => normalizeObjects([{ kind: 'link', props: { label: 'x', newTab: v } }])[0].props.newTab;
   assert.equal(on('false'), false);

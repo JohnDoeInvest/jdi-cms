@@ -63,13 +63,28 @@ const IMAGE_SIZES_ATTR = {
 };
 
 /**
+ * What "Open in new tab" puts on the anchor - a button's, a link's, or the
+ * one a linked image is wrapped in.
+ *
+ * `rel` is not optional beside `target="_blank"`: without `noopener` the page
+ * that opens can reach back through `window.opener` and navigate the tab it
+ * came from. `noreferrer` rides along because that is the pair the rich-text
+ * sanitiser already adds to an author's own link (see src/lib/html.js), and a
+ * link typed into a Text object should not behave differently from the same
+ * link made as an object.
+ */
+const newTabAttrs = (p = {}) => (p.newTab ? ' target="_blank" rel="noopener noreferrer"' : '');
+
+/**
  * One image, video or file, in the markup blocks.css actually styles.
  *
  * The class names have to match the editor canvas exactly (`b-image`,
  * `b-image__frame`) or the shared stylesheet misses the site entirely - which
  * is what silently cost images their sizing, their frame and their alignment.
  */
-function mediaFigure(item, { caption, href, alt, className = 'b-image', attrs = '', sizes = SIZES.content }) {
+function mediaFigure(item, {
+  caption, href, newTab, alt, className = 'b-image', attrs = '', sizes = SIZES.content,
+}) {
   if (!item) {
     return `<figure class="${className}"${attrs}><div class="b-image__frame"></div></figure>`;
   }
@@ -87,7 +102,7 @@ function mediaFigure(item, { caption, href, alt, className = 'b-image', attrs = 
     });
   }
   const framed = `<div class="b-image__frame">${inner}</div>`;
-  const linked = href ? `<a href="${esc(href)}">${framed}</a>` : framed;
+  const linked = href ? `<a href="${esc(href)}"${newTabAttrs({ newTab })}>${framed}</a>` : framed;
   const text = caption ?? item.caption;
   return `<figure class="${className}"${attrs}>${linked}${
     text ? `<figcaption>${esc(text)}</figcaption>` : ''}</figure>`;
@@ -127,7 +142,7 @@ export function renderObject(obj, ctx) {
     case 'image':
       return mediaFigure(ctx.media?.get(props.media), {
         className: `b-image${sizeClass(props.size)}${radiusClass(props.radius)}${align}`, attrs: s,
-        caption: props.caption, href: props.href, alt: props.alt,
+        caption: props.caption, href: props.href, newTab: props.newTab, alt: props.alt,
         // A capped figure is served a correspondingly smaller variant.
         sizes: IMAGE_SIZES_ATTR[props.size] || SIZES.content,
       });
@@ -197,18 +212,6 @@ const buttonClasses = (p = {}) => cls('b-button__el',
   p.colour && `b-button__el--c-${p.colour}`,
   p.outline && 'b-button__el--outline',
   p.buttonSize && p.buttonSize !== 'medium' && `b-button__el--${p.buttonSize}`);
-
-/**
- * What "Open in new tab" puts on the anchor.
- *
- * `rel` is not optional beside `target="_blank"`: without `noopener` the page
- * that opens can reach back through `window.opener` and navigate the tab it
- * came from. `noreferrer` rides along because that is the pair the rich-text
- * sanitiser already adds to an author's own link (see src/lib/html.js), and a
- * link typed into a Text object should not behave differently from the same
- * link made as a Link object.
- */
-const newTabAttrs = (p = {}) => (p.newTab ? ' target="_blank" rel="noopener noreferrer"' : '');
 
 /* ------------------------------------------------------------------ forms */
 
