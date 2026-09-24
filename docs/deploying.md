@@ -34,7 +34,7 @@ cookie flag and HSTS switch on by themselves once requests arrive over TLS.
 | Which proxy to believe | `loopback` for one on the same machine, its address for one elsewhere | `TRUST_PROXY` (off by default; `true` is read as `loopback`) |
 | Public address | Your domain | `SITE_URL`, then Settings → Site address |
 | Where it listens | Every interface by default; loopback behind a proxy | `HOST`, `PORT` (`0.0.0.0`, `8080`) |
-| Mail | Brevo, or offline to `data/outbox/` | `BREVO_API_KEY`, `MAIL_FROM` |
+| Mail | Brevo, or offline to `data/outbox/` | `BREVO_API_KEY`, `MAIL_FROM` — see [Turning mail on](#turning-mail-on) |
 
 A hop count in `TRUST_PROXY` (`1`) is only safe when nothing can reach Node
 except through that proxy — bind `HOST=127.0.0.1` — or a visitor can name
@@ -60,6 +60,58 @@ installation's content; everything else is this repository.
 - **Linux:** run `node src/server.js` from the repository root under systemd
   or another process manager. A restart takes a second or two, and there is
   no holding page while it happens.
+
+## Turning mail on
+
+Without `BREVO_API_KEY` every message is written to `data/outbox/` and logged,
+so forms and sign-in are testable offline. Two variables switch it to real
+delivery:
+
+| Variable | What it is |
+| --- | --- |
+| `BREVO_API_KEY` | The Brevo transactional key. Its presence is what decides offline or live. |
+| `MAIL_FROM` | The sender address. Defaults to `noreply@<host of SITE_URL>`, which is almost never a sender Brevo will accept. |
+
+`MAIL_FROM_NAME` is optional and falls back to the site's name. `CONTACT_TO`
+is only the last resort for a form that names no recipient and a Settings
+screen that names none either — set the recipient on the form instead.
+
+**The sender has to be verified in Brevo**, as an address or a whole domain.
+An unverified one is the usual reason a key is in place and nothing arrives.
+
+**Both variables go where the service reads its environment**, not in
+`start.sh` — the same rule `THEME_DIR` follows. Under launchd that is the
+`EnvironmentVariables` dict in
+`~/Library/LaunchAgents/local.<folder>.node.plist`; under systemd,
+`Environment=` lines or an `EnvironmentFile=`. The process only reads them at
+launch, so the service has to be restarted, and the start-up banner says
+which mode it came up in — `Mail: offline (written to data/outbox/)` means
+the variable never reached it.
+
+### Do this before, not after: sign-in depends on it
+
+A site set to **one-time code** sign-in prints the code on the login page
+while there is no key, and emails it once there is one — `requestCode()`
+returns the code to the page only when `config.brevoApiKey` is empty. So the
+moment a key is added, getting into the CMS depends on mail working, and a
+sender that is not verified yet locks out anyone without a live session.
+
+Two ways round it, and the first is better:
+
+- **Set Settings → sign-in to password** before adding the key. The CMS then
+  never depends on mail; forms still use it.
+- Or add the key while signed in, and confirm a real message arrives before
+  signing out. Sessions last 30 days, so there is room to fix a sender.
+
+### When something does not arrive
+
+A form submission that cannot be delivered is still **kept**: the message is
+recorded with `delivered: false` and is in the CMS under Messages. Nothing is
+lost while a sender is being sorted out, and the visitor is not shown an
+error.
+
+The reason is on stderr — `  [form] delivery failed: …` with Brevo's status
+code and response — which under launchd is `data/logs/<label>.err.log`.
 
 ## First run on a server
 
