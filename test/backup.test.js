@@ -159,12 +159,24 @@ test('a theme travels inside the archive, as the folder a site looks for', async
   }
 });
 
-test('with no theme of its own, an archive says so rather than going quiet', () => {
-  const made = buildBackup();
-  const manifest = JSON.parse(entriesOf(made.data).find((e) => e.name === 'manifest.json').data);
-  assert.equal(manifest.theme, null);
-  const readme = entriesOf(made.data).find((e) => e.name === 'README.txt').data.toString();
-  assert.match(readme, /default theme/);
+test('with no theme of its own, an archive says so rather than going quiet', async () => {
+  /* Said explicitly rather than assumed: this suite ships with the code and
+     runs in real deployments, and a deployment is exactly the checkout that
+     *has* a theme/ folder. Read off the environment, this passed on a
+     developer's copy and failed on the site - which is the wrong way round
+     for a test to be wrong. */
+  const { config } = await import('../src/config.js');
+  const wasTheme = config.paths.theme;
+  config.paths.theme = '';
+  try {
+    const made = buildBackup();
+    const manifest = JSON.parse(entriesOf(made.data).find((e) => e.name === 'manifest.json').data);
+    assert.equal(manifest.theme, null);
+    const readme = entriesOf(made.data).find((e) => e.name === 'README.txt').data.toString();
+    assert.match(readme, /default theme/);
+  } finally {
+    config.paths.theme = wasTheme;
+  }
 });
 
 test('the summary can be taken without building an archive', () => {
