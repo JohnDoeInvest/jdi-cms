@@ -1164,11 +1164,27 @@ half-done. Kept short.
   the ceiling comment in config.js already names streaming as the fix when it
   bites. This is what would make it bite.
 
-  ### Backup is easy and should ship on its own — and now has (2026-09-24)
+  ### Backup is easy and should ship on its own — and has (2026-09-24)
 
-  `npm run backup`, as `scripts/backup.mjs`, with the ZIP writer as
-  `src/lib/zip.js` so the CMS button later calls the same code rather than a
-  second copy of it. Read-only, so it cannot break anything.
+  `npm run backup` and a **Download a backup** button on Settings, both
+  through `src/lib/backup.js`, with the ZIP writer in `src/lib/zip.js`. The
+  script is a 34-line wrapper: one description of what a backup is, so the
+  button and the command cannot drift. Read-only, so it cannot break
+  anything.
+
+  - **Administrator only**, and not because it changes anything - it changes
+    nothing at all - but because it *contains* everything, the users table and
+    every message a visitor ever sent among it. Checked in a test rather than
+    asserted: signed out is a 303, an editor is a 403, an admin gets the zip.
+  - **Built in memory and sent whole**, which costs roughly five times the
+    archive's size while it works - measured at 1.26s and 247 MB peak for a
+    47.5 MB archive. Deliberate, and the trade is stated where the decision
+    is: this is a button somebody presses a few times a year, and streaming
+    is far more machinery than that earns. `src/lib/zip.js` says what to do
+    if that stops being true.
+  - **The panel says what the download holds before the click** - row counts,
+    file count, the size, and the theme it cannot carry. A 50 MB download
+    nobody was expecting is a worse surprise than a line of text.
 
   - **What it excludes is the point**, and it asks git rather than holding a
     list: anything tracked under `www/media` or `www/fonts` ships with the

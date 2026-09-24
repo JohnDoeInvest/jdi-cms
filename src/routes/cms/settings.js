@@ -1,4 +1,4 @@
-import { html, redirect, parseForm } from '../../lib/http.js';
+import { html, redirect, parseForm, send } from '../../lib/http.js';
 import { esc } from '../../lib/html.js';
 import { icon } from '../../views/icons.js';
 import { cmsLayout, cmsHead } from '../../views/cms/layout.js';
@@ -7,6 +7,7 @@ import { SCHEMA, all, set, parseLinks, linksToText } from '../../lib/settings.js
 import { media, pages } from '../../models.js';
 import { config } from '../../config.js';
 import { SIGN_IN_METHODS } from '../../lib/auth.js';
+import { buildBackup, backupSummary } from '../../lib/backup.js';
 
 const METHOD_LABELS = {
   password: 'Password',
@@ -17,7 +18,47 @@ const METHOD_LABELS = {
 const NOTES = {
   'needs-password': ['notice notice--warn',
     'Sign-in was left as it was: set yourself a password under Account first, or you could not get back in.'],
+  'backup-failed': ['notice notice--warn',
+    'The backup was not made. The reason is in the server log — most likely the database did not pass its own integrity check, and a backup of that is worse than none.'],
 };
+
+const mb = (n) => `${(n / 1048576).toFixed(1)} MB`;
+
+/**
+ * What a backup holds, said before the click rather than after.
+ *
+ * The size matters: this is a download measured in tens of megabytes, and
+ * knowing that beforehand is the difference between waiting and wondering.
+ * Wrapped because it reads the uploads folder - a screen that cannot be drawn
+ * because a backup summary threw would be a poor trade.
+ */
+function backupPanel() {
+  let summary;
+  try { summary = backupSummary(); } catch { return ''; }
+  const counted = Object.entries(summary.rows)
+    .filter(([, n]) => n > 0).map(([t, n]) => `${n} ${t}`).join(', ');
+  return `
+      <section class="panel" style="margin-top:var(--ui-s-5)">
+        <h2 class="h-section" style="margin-bottom:var(--ui-s-4)">Backup</h2>
+        <p class="tiny muted" style="margin:0 0 var(--ui-s-4)">
+          Everything this site holds that the code does not: the database, the uploads,
+          and any typeface uploaded rather than shipped. The paths inside match where
+          they belong, so restoring is unpacking it at the root of a fresh copy — there
+          is nothing to put anywhere by hand.
+        </p>
+        <dl class="env-list">
+          <dt>Database</dt><dd>${esc(counted || 'empty')}</dd>
+          <dt>Uploads</dt><dd>${summary.files} files</dd>
+          <dt>Download</dt><dd>about ${esc(mb(summary.bytes))}</dd>
+          ${summary.theme ? `<dt>Theme</dt><dd>Not included — it lives outside this
+            installation, at <code>${esc(summary.theme)}</code>, and has to travel with
+            the archive.</dd>` : ''}
+        </dl>
+        <p style="margin-top:var(--ui-s-4)">
+          <a class="btn" href="/cms/settings/backup" download>Download a backup</a>
+        </p>
+      </section>`;
+}
 
 /**
  * Site settings — everything that makes one installation different from the
@@ -94,7 +135,8 @@ export function registerSettings(router, guard) {
               value: linksToText(values.social_links), rows: 4, hint: SCHEMA.social_links.hint })}
           </div>
         </section>
-      </form>`;
+      </form>
+      ${backupPanel()}`;
 
     // The button lives outside the form element, so associate it by id.
     const footer = `
@@ -117,6 +159,37 @@ export function registerSettings(router, guard) {
 
     html(res, cmsLayout({ title: 'Settings', user, path: '/cms/settings', center, right, footer,
       data: { page: 'settings' } }));
+  }, 'admin'));
+
+  /**
+   * The same archive `npm run backup` writes, as a download.
+   *
+   * Admin only, and not because it changes anything - it changes nothing at
+   * all - but because it *contains* everything: every message a visitor sent
+   * and the users table among it.
+   *
+   * Built in memory and sent whole rather than streamed, which costs roughly
+   * five times the archive's size while it works. Deliberate: it is a button
+   * somebody presses a few times a year, and streaming is a good deal more
+   * machinery than that earns. src/lib/zip.js says what to do if it ever
+   * stops being true.
+   */
+  router.get('/cms/settings/backup', guard((req, res) => {
+    let made;
+    try {
+      made = buildBackup();
+    } catch (err) {
+      console.error('  [backup] refused:', err.message);
+      return redirect(res, '/cms/settings?note=backup-failed');
+    }
+    send(res, 200, made.data, {
+      'Content-Type': 'application/zip',
+      // The name carries the site and the day, because a folder of
+      // backup.zip, backup(1).zip tells nobody which site or when.
+      'Content-Disposition': `attachment; filename="${made.filename}"`,
+      // Never a cached copy of yesterday's content.
+      'Cache-Control': 'no-store',
+    });
   }, 'admin'));
 
   router.post('/cms/settings', guard(async (req, res, { user }) => {

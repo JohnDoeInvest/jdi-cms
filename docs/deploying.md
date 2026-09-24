@@ -53,6 +53,13 @@ npm run backup                    # ./<site>-2026-09-24.zip
 npm run backup -- /backups/x.zip  # somewhere of your choosing
 ```
 
+The same archive is a button in the CMS, under **Settings → Backup**, for
+anyone who has no shell on the machine. Administrators only: it changes
+nothing, but it contains everything, the users table and every message
+among it. It is built in memory and sent whole, so it briefly costs a few
+times the archive's size — a few times a year, from one person, which is
+what it was sized for.
+
 Safe against a live site: the database is copied with `VACUUM INTO`, which is
 consistent while the server has the file open. Copying `cms.db` by hand while
 the server runs is *not* — a running site keeps a write-ahead log beside it,
