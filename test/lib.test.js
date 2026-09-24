@@ -1415,6 +1415,34 @@ test('a linked image opens in a new tab on the same switch', () => {
   assert.doesNotMatch(draw({ newTab: true }), /<a /);
 });
 
+test('a PDF or a video is its own link, so the object never wraps one round it', () => {
+  /* An anchor may not contain interactive content. A file chip and a video
+     with controls are both interactive, so nesting the object's own link
+     round them is markup the browser silently rewrites - it closes the outer
+     anchor early - and a click would fight over what it meant. */
+  const item = (mime, filename) => new Map([[7, {
+    id: 7, filename, mime, variants: '', alt: '', original_name: filename,
+  }]]);
+  const draw = (media, props) => renderObject(
+    normalizeObjects([{ kind: 'image', props: { media: 7, href: 'https://example.com', ...props } }])[0],
+    { media });
+
+  const pdf = draw(item('application/pdf', 'report.pdf'));
+  // Its own link is there and opens away; the object's is not drawn at all.
+  assert.match(pdf, /<a class="block-file"[^>]*target="_blank"/);
+  assert.doesNotMatch(pdf, /<a href="https:\/\/example\.com"/);
+  // One anchor on the figure, never two.
+  assert.equal((pdf.match(/<a /g) || []).length, 1);
+
+  const video = draw(item('video/mp4', 'clip.mp4'));
+  assert.match(video, /<video controls/);
+  assert.equal((video.match(/<a /g) || []).length, 0);
+
+  // A picture is not interactive, so it takes the link as it always did.
+  const picture = draw(item('image/webp', 'photo.webp'), { newTab: true });
+  assert.match(picture, /<a href="https:\/\/example\.com" target="_blank" rel="noopener noreferrer">/);
+});
+
 test('a button or a link written before the new-tab switch existed stays put', () => {
   /* The stored shape gains a `false`, which is what the panel needs to show a
      cleared checkbox - but nothing already on a page starts opening tabs. */

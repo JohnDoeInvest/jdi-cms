@@ -1627,16 +1627,29 @@
             + 'that happens to be larger \u2014 it does not have to be a heading.')
           + pAlign(id, p.align, 'Alignment')
           + pInk(id, p.ink);
-      case 'image':
+      case 'image': {
+        /* A PDF and a video are their own links already, so the renderer
+           leaves the object's link off rather than nesting one inside the
+           other. Said here rather than silently dropped - the field keeps
+           whatever it holds, and the note explains why it is not drawn. */
+        var picked = mediaMap[p.media];
+        var linkNote = !picked || picked.kind === 'image' ? ''
+          : '<p class="tiny muted">'
+            + (picked.kind === 'video'
+              ? 'A video has its own controls, so a link set here is not drawn \u2014 a click should play it.'
+              : 'This file is already its own link and opens in a new tab, so a link set here is not drawn.')
+            + '</p>';
         return pInput(id, 'alt', p.alt, 'Alt text', 'Describes the image for screen readers')
           + pInput(id, 'caption', p.caption, 'Caption')
           + pLink(id, p.href, 'Link', 'Makes the image clickable')
           + pCheck(id, 'newTab', p.newTab, 'Open in new tab')
+          + linkNote
           + pSelect(id, 'size', p.size || 'full', IMAGE_SIZES, 'Display size',
               'Never wider than its column, whatever the upload measures')
           + pSelect(id, 'radius', p.radius || 'large', RADII, 'Corners',
               'Square leaves artwork such as a logo exactly as it was drawn')
           + pAlign(id, p.align, 'Alignment');
+      }
       case 'columns2':
         return pSelect(id, 'ratio', p.ratio || '50-50', RATIOS2, 'Split',
               'Stacks to one column on a phone');

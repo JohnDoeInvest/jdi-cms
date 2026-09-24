@@ -262,6 +262,20 @@ half-done. Kept short.
   - The canvas needs no change: it draws the label in a `<span>`, not an
     anchor, so where the link opens is not something it can show. The
     checkbox is the whole of the interface.
+  - **A PDF or a video never takes the object's link**, and fixing that was
+    the interesting half. Both draw something interactive of their own - a
+    file chip that is already an anchor, a `<video controls>` - and an anchor
+    may not contain interactive content, so wrapping one gave nested anchors
+    the browser silently rewrites by closing the outer one early. It was also
+    the wrong thing to want: a click on a file chip should open the file and a
+    click on a video should play it. The link is drawn for a picture and
+    nothing else. Predates the new-tab work; found while adding it, fixed on
+    the same day rather than folded into the feature.
+  - **Not drawn is said, not silently dropped.** The image panel carries a
+    note when the chosen media is a PDF or a video, in the shape the
+    breadcrumbs panel already uses for a setting that has no effect where it
+    sits. The field keeps whatever it holds, so nothing is lost by choosing a
+    PDF and changing your mind.
 - **Alignment is three buttons and a colour is its own swatch.** Both used to
   be dropdowns, which made the two commonest settings in the panel cost two
   clicks and a read — and a colour named "Stone" in a list asks you to remember

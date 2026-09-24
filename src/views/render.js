@@ -102,7 +102,17 @@ function mediaFigure(item, {
     });
   }
   const framed = `<div class="b-image__frame">${inner}</div>`;
-  const linked = href ? `<a href="${esc(href)}"${newTabAttrs({ newTab })}>${framed}</a>` : framed;
+  /* The object's own link goes round a picture and nothing else.
+     A PDF draws its own file link and a video its own controls, and both are
+     interactive content - which an anchor may not contain, so the browser
+     "fixes" the nesting by closing the outer one early and the markup stops
+     being what it says. It is also the wrong thing to want: a click on a PDF
+     chip should open the PDF, and a click on a video should play it, not
+     navigate somewhere a link field once said. The editor's panel says so
+     rather than leaving the setting to be quietly ignored. */
+  const linked = href && kind === 'image'
+    ? `<a href="${esc(href)}"${newTabAttrs({ newTab })}>${framed}</a>`
+    : framed;
   const text = caption ?? item.caption;
   return `<figure class="${className}"${attrs}>${linked}${
     text ? `<figcaption>${esc(text)}</figcaption>` : ''}</figure>`;
