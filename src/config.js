@@ -54,15 +54,30 @@ export const config = {
   paths: {
     www: path.join(ROOT, 'www'),
     /*
-     * A site's own look, kept outside this repo. Any file in it is served in
-     * place of the file of the same name in www/assets - tokens.css and
-     * site.css are the pair a theme is made of, a favicon.svg or site.js may
-     * come along - and everything it does not have falls through to the
-     * default. Empty: the default theme, as shipped.
+     * A site's own look. Any file in it is served in place of the file of the
+     * same name in www/assets - tokens.css and site.css are the pair a theme
+     * is made of, a favicon.svg or site.js may come along - and everything it
+     * does not have falls through to the default.
+     *
+     * A `theme/` folder beside the code is found without being named, which
+     * is the shape almost every installation wants: one site, one folder, and
+     * the theme in it with the database and the uploads. It is git-ignored,
+     * so a pull never touches it and it never shows up as untracked.
+     *
+     * THEME_DIR overrides that, for a theme kept somewhere else - shared
+     * between two sites, or on a read-only mount. It used to be the only way
+     * in, which made it *required*, and a required environment variable is
+     * one somebody forgets: a site whose service never saw it comes up in the
+     * neutral default theme and looks broken rather than unset. A convention
+     * cannot be forgotten, only deleted, and a deleted folder is visible.
      *
      *   THEME_DIR=/srv/example-theme ./start.sh
      */
-    theme: process.env.THEME_DIR ? path.resolve(process.env.THEME_DIR) : '',
+    theme: (() => {
+      if (process.env.THEME_DIR) return path.resolve(process.env.THEME_DIR);
+      const beside = path.join(ROOT, 'theme');
+      return fs.existsSync(beside) ? beside : '';
+    })(),
     media: path.join(ROOT, 'www', 'media'),
     // Typefaces, beside the uploads rather than among them: a font is not a
     // picture and has no business in the media library's browser.

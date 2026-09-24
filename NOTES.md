@@ -370,6 +370,20 @@ half-done. Kept short.
   use. Renaming a colour keeps its id, so pages referring to it still work.
   "Pick from an image" quantises a file in the browser and takes the eight most
   prominent colours; nothing is uploaded.
+- **A `theme/` folder beside the code is found without being named**
+  (2026-09-24). `THEME_DIR` used to be the only way in, which made it
+  *required* - and a required environment variable is one somebody forgets.
+  It has to reach the *service* rather than the shell, so a site whose
+  launchd or systemd unit never saw it comes up in the neutral default theme
+  and looks broken rather than unset: the worst kind of failure, silent and
+  visible only to whoever knows what the site should look like. A convention
+  cannot be forgotten, only deleted, and a deleted folder is a thing you can
+  see. `THEME_DIR` still overrides, for a theme shared between sites or on a
+  read-only mount; it is no longer the price of having one.
+  - It also puts the theme back where it belongs: one site, one folder, with
+    the database and the uploads. Keeping it outside was argued on 2026-09-23
+    as protecting it from `git pull` - which was never a real risk, since the
+    repo has no `theme/` of its own, and `.gitignore` settles it for good.
 - **The default theme is plain, and a site can bring its own** (2026-09-22).
   Neutral greys and one blue accent (#357abb), a white top bar and a white
   footer - they show the same logo, so they have to agree on a ground it
@@ -1129,6 +1143,16 @@ half-done. Kept short.
   is the only kind of instruction that survives being handed over. A
   `README.txt` beside the manifest is then a courtesy rather than the
   mechanism.
+
+  **The theme travels inside it** (2026-09-24), as `theme/`. "Send the
+  archive, and also this folder, and also set an environment variable" is
+  precisely the instruction that gets half-followed, and the half that goes
+  missing is the one whose absence looks like a broken site rather than an
+  unconfigured one. A restore turns a `THEME_DIR` arrangement into the plain
+  one rather than reproducing it; where the theme happened to live is
+  recorded in the manifest and not re-created. Its `.git` stays behind with
+  every other dotfile - a theme's history belongs to its own repository, not
+  to a copy of a site's content.
 
   **It fits this codebase unusually well**, because the separation it needs
   already exists. A site's content is exactly three things - `data/cms.db`,

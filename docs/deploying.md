@@ -35,6 +35,7 @@ cookie flag and HSTS switch on by themselves once requests arrive over TLS.
 | Public address | Your domain | `SITE_URL`, then Settings → Site address |
 | Where it listens | Every interface by default; loopback behind a proxy | `HOST`, `PORT` (`0.0.0.0`, `8080`) |
 | Mail | Brevo, or offline to `data/outbox/` | `BREVO_API_KEY`, `MAIL_FROM` — see [Turning mail on](#turning-mail-on) |
+| A site's own look | A `theme/` folder beside the code, found by itself | `THEME_DIR` only to keep it elsewhere |
 
 A hop count in `TRUST_PROXY` (`1`) is only safe when nothing can reach Node
 except through that proxy — bind `HOST=127.0.0.1` — or a visitor can name
@@ -73,10 +74,12 @@ unzip ~/site-2026-09-24.zip      # every file lands where it belongs
 ./start.sh
 ```
 
-`manifest.json` inside carries the row counts it was taken with, the commit
-of the CMS it came off, and — because a theme lives *outside* the
-installation — which `THEME_DIR` was in use. A site restored without its
-theme comes up in the neutral default one and looks broken rather than unset.
+That includes the theme, which restores to `theme/` — the folder an
+installation looks in without being told. There is nothing to set.
+
+`manifest.json` inside carries the row counts it was taken with and the
+commit of the CMS it came off, so the far end can tell it arrived whole and
+judge version skew rather than discover it.
 
 A backup is refused if the database does not pass its own `integrity_check`,
 on the grounds that a corrupt backup is the kind you find out about when you

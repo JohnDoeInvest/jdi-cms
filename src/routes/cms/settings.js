@@ -50,9 +50,10 @@ function backupPanel() {
           <dt>Database</dt><dd>${esc(counted || 'empty')}</dd>
           <dt>Uploads</dt><dd>${summary.files} files</dd>
           <dt>Download</dt><dd>about ${esc(mb(summary.bytes))}</dd>
-          ${summary.theme ? `<dt>Theme</dt><dd>Not included — it lives outside this
-            installation, at <code>${esc(summary.theme)}</code>, and has to travel with
-            the archive.</dd>` : ''}
+          ${summary.themeFiles
+            ? `<dt>Theme</dt><dd>Included — ${summary.themeFiles} files, restored to
+               <code>theme/</code>, which is where a site looks for one.</dd>`
+            : '<dt>Theme</dt><dd>None of its own — this site draws in the default.</dd>'}
         </dl>
         <p style="margin-top:var(--ui-s-4)">
           <a class="btn" href="/cms/settings/backup" download>Download a backup</a>

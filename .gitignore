@@ -30,6 +30,10 @@ assets/*
 !assets/site-structure.md
 !assets/demowww/
 
+# A site's own theme, found by convention when it sits here (see config.js).
+# Its own repository, or just files - either way not this one's business.
+/theme/
+
 node_modules/
 .DS_Store
 __MACOSX/

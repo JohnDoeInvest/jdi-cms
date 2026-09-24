@@ -69,6 +69,39 @@ export function contentFiles() {
   return [...walk(config.paths.media, shipped), ...walk(config.paths.fonts, shipped)];
 }
 
+/**
+ * The theme's files, named for where a restored site will look for them.
+ *
+ * A theme is part of a site even when it is kept elsewhere, and "send the
+ * archive, and also this folder, and also set an environment variable" is
+ * exactly the instruction that gets half-followed. So it travels *inside*,
+ * always as `theme/` - which is where an installation looks without being
+ * told - and a restore turns a THEME_DIR arrangement into the plain one
+ * rather than reproducing it. The README in the archive says so.
+ *
+ * `.git` is skipped with every other dotfile: the theme's history belongs to
+ * its own repository, not to a copy of a site's content.
+ */
+export function themeFiles() {
+  if (!config.paths.theme) return [];
+  const root = config.paths.theme;
+  const out = [];
+  const walkTheme = (dir) => {
+    if (!fs.existsSync(dir)) return;
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (entry.name.startsWith('.')) continue;
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) walkTheme(full);
+      else {
+        const rel = path.relative(root, full).split(path.sep).join('/');
+        out.push({ rel: `theme/${rel}`, full, size: fs.statSync(full).size });
+      }
+    }
+  };
+  walkTheme(root);
+  return out;
+}
+
 /** The commit this CMS is on, so version skew can be judged rather than found. */
 export function cmsCommit() {
   try {
@@ -97,14 +130,17 @@ export function backupSummary() {
   db.close();
 
   const files = contentFiles();
+  const themed = themeFiles();
   return {
     site: name,
     rows,
     files: files.length,
+    theme: config.paths.theme || null,
+    themeFiles: themed.length,
     // The database compresses about 9:1 and the uploads not at all, so the
     // uploads are the size of the archive to within a rounding error.
-    bytes: files.reduce((n, f) => n + f.size, 0) + fs.statSync(config.paths.db).size,
-    theme: config.paths.theme || null,
+    bytes: [...files, ...themed].reduce((n, f) => n + f.size, 0)
+      + fs.statSync(config.paths.db).size,
   };
 }
 
@@ -125,12 +161,15 @@ To restore it:
 
 manifest.json carries the row counts this was taken with, so you can
 check it arrived whole.
-${summary.theme ? `
-This site was running with a theme from:
-  ${summary.theme}
-That is a separate repository and is NOT in here. Point THEME_DIR at
-it on the far end, or the site comes up in the neutral default theme.
-` : ''}`;
+${summary.themeFiles ? `
+The site's theme is in here too, as theme/. That is where an
+installation looks for one without being told, so unpacking is all
+there is to it — no THEME_DIR to set.${summary.theme && !summary.theme.endsWith('/theme') ? `
+(On the machine this came from it lived at ${summary.theme}.)` : ''}
+` : `
+This site is on the default theme — there is nothing of its own to
+carry.
+`}`;
 }
 
 /**
@@ -178,7 +217,7 @@ export function buildBackup({ now = new Date() } = {}) {
   }
 
   const summary = backupSummary();
-  const files = contentFiles();
+  const files = [...contentFiles(), ...themeFiles()];
   const day = now.toISOString().slice(0, 10);
 
   const full = {
@@ -188,11 +227,11 @@ export function buildBackup({ now = new Date() } = {}) {
     cms: { commit: cmsCommit() },
     database: { rows: summary.rows, integrity: manifest.integrity },
     uploads: { files: files.length, bytes: files.reduce((n, f) => n + f.size, 0) },
-    /* A theme lives outside the installation, so it is not in here - but the
-       archive says it was in use, because a site restored without its theme
-       comes up in the default one and looks broken rather than unset. */
-    theme: summary.theme
-      ? { dir: summary.theme, note: 'Not in this archive. THEME_DIR must point at this theme on the far end.' }
+    /* The theme travels inside, always as `theme/`, which is where an
+       installation looks for one without being told. Where it happened to
+       live on the machine this came from is recorded and not reproduced. */
+    theme: summary.themeFiles
+      ? { files: summary.themeFiles, at: 'theme/', wasAt: summary.theme }
       : null,
     restore: 'Unpack at the root of a Slice installation. Every path lands where it belongs.',
   };

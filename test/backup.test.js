@@ -91,8 +91,8 @@ test('every path inside lands where it belongs, and nowhere else', () => {
     assert.ok(!name.startsWith('/'), `absolute: ${name}`);
     assert.ok(!name.split('/').includes('..'), `climbs out: ${name}`);
     assert.ok(!/^[a-z]:/i.test(name), `drive letter: ${name}`);
-    // Only the two content folders and the two notes at the root.
-    assert.ok(/^(manifest\.json|README\.txt|data\/cms\.db|www\/(media|fonts)\/)/.test(name),
+    // Only the content folders, the theme, and the two notes at the root.
+    assert.ok(/^(manifest\.json|README\.txt|data\/cms\.db|theme\/|www\/(media|fonts)\/)/.test(name),
       `not a content path: ${name}`);
   }
 });
@@ -124,6 +124,47 @@ test('nothing that ships with the repository is in a backup', () => {
   assert.ok(!names.includes('www/fonts/inter-variable.woff2'));
   assert.ok(!names.includes('www/fonts/README.md'));
   assert.ok(!names.some((n) => n.split('/').pop().startsWith('.')), 'a dotfile got in');
+});
+
+test('a theme travels inside the archive, as the folder a site looks for', async () => {
+  /* "Send the archive, and also this folder, and also set an environment
+     variable" is the instruction that gets half-followed, and a site restored
+     without its theme comes up in the neutral default looking broken rather
+     than unset. So it goes in, always as `theme/` - which is where an
+     installation finds one without being told - and a restore turns a
+     THEME_DIR arrangement into the plain one rather than reproducing it. */
+  const themeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'slice-theme-'));
+  fs.writeFileSync(path.join(themeDir, 'tokens.css'), ':root{--accent:#ff0000}');
+  fs.mkdirSync(path.join(themeDir, '.git'), { recursive: true });
+  fs.writeFileSync(path.join(themeDir, '.git', 'HEAD'), 'ref: refs/heads/main');
+
+  const { config } = await import('../src/config.js');
+  const wasTheme = config.paths.theme;
+  config.paths.theme = themeDir;
+  try {
+    const names = entriesOf(buildBackup().data).map((e) => e.name);
+    assert.ok(names.includes('theme/tokens.css'), 'the theme should be in the archive');
+    // Its history belongs to its own repository, not to a copy of a site.
+    assert.ok(!names.some((n) => n.includes('.git')), 'the theme .git got in');
+
+    const manifest = JSON.parse(
+      entriesOf(buildBackup().data).find((e) => e.name === 'manifest.json').data);
+    assert.equal(manifest.theme.at, 'theme/');
+    assert.equal(manifest.theme.files, 1);
+    // Where it happened to live is recorded, and deliberately not reproduced.
+    assert.equal(manifest.theme.wasAt, themeDir);
+  } finally {
+    config.paths.theme = wasTheme;
+    fs.rmSync(themeDir, { recursive: true, force: true });
+  }
+});
+
+test('with no theme of its own, an archive says so rather than going quiet', () => {
+  const made = buildBackup();
+  const manifest = JSON.parse(entriesOf(made.data).find((e) => e.name === 'manifest.json').data);
+  assert.equal(manifest.theme, null);
+  const readme = entriesOf(made.data).find((e) => e.name === 'README.txt').data.toString();
+  assert.match(readme, /default theme/);
 });
 
 test('the summary can be taken without building an archive', () => {

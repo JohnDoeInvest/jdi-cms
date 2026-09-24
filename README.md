@@ -129,15 +129,20 @@ every page, and change the moment you save.
 **A theme folder** holds everything else. The default look is
 `www/assets/tokens.css` (design tokens: greys, accent, spacing, radii, and
 the colours of the top bar, sub menu and footer) and `www/assets/site.css`
-(the site's furniture). Point `THEME_DIR` at a folder of your own and any
-file in it is served in place of the one with the same name:
+(the site's furniture). Put a `theme/` folder beside the code and any file in
+it is served in place of the one with the same name:
 
 ```
-my-theme/
+theme/
   tokens.css     your colours and tokens — start from a copy of www/assets/tokens.css
   site.css       optional: your own top bar, footer, cards…
   favicon.svg    optional
 ```
+
+Nothing to configure — a `theme/` folder is found because it is there, and it
+is git-ignored, so it survives every `git pull` and never shows up as
+untracked. `THEME_DIR` points somewhere else instead, for a theme shared
+between two sites or kept on a read-only mount:
 
 ```bash
 THEME_DIR=/srv/my-theme ./start.sh
@@ -186,7 +191,7 @@ starts.
 | `HOST` | `0.0.0.0` | Interface to listen on; `127.0.0.1` keeps it local, as it should be behind a proxy |
 | `SITE_URL` | `http://localhost:<PORT>` | The public address; the starting value for Settings → Site address |
 | `TRUST_PROXY` | *(off)* | A proxy allowed to report the visitor's address and protocol: `loopback` for one on this machine, otherwise its address |
-| `THEME_DIR` | *(none)* | A folder whose files replace the defaults in `www/assets` |
+| `THEME_DIR` | `./theme` when it exists | A folder whose files replace the defaults in `www/assets` |
 | `DB_PATH` | `data/cms.db` | Where the database lives |
 | `BREVO_API_KEY` | *(none)* | Sends mail and SMS; without it they go to `data/outbox/` |
 | `MAIL_FROM` | `noreply@<host of SITE_URL>` | Sender address |
