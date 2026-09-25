@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import { config } from './config.js';
 import { createApp } from './app.js';
 import { purgeExpired, keepCodeForOldInstalls, signInMethod, needsSetup, setupToken, bypassUser } from './lib/auth.js';
