@@ -85,6 +85,56 @@ A backup is refused if the database does not pass its own `integrity_check`,
 on the grounds that a corrupt backup is the kind you find out about when you
 need it.
 
+### Onto a machine that already has a site
+
+`unzip` **adds and overwrites; it does not remove.** The database is replaced
+cleanly, but uploads the old site had and the archive does not are still
+there afterwards — orphans, harmless but not a clean restore. And the server
+has to be **stopped first**: overwriting `cms.db` underneath a running
+process leaves it writing to an unlinked file, which silently resurrects the
+old data.
+
+So for a second restore onto a populated machine, by hand:
+
+```bash
+./stop.sh                              # or ./scripts/autostart.sh uninstall
+mv data/cms.db data/cms.db.replaced    # keep what you are replacing
+mv www/media www/media.replaced
+unzip ~/site-2026-09-24.zip
+./start.sh
+```
+
+Onto an empty clone none of that applies, and the unzip is the whole job.
+
+### The first sign-in on the new machine
+
+Worth settling **before** the backup is taken, because the archive carries
+the users table and the sign-in setting with it.
+
+A site set to **one-time code** sign-in, on a machine with no
+`BREVO_API_KEY`, shows the code on the page only for a request from that
+machine — `fromThisMachine(req)` in `src/routes/auth.js`. Deployed to a
+server and opened from a laptop, there is no code on screen and none in the
+post, so **nobody can sign in**.
+
+There is a way through: the code is written to `data/outbox/` on the server,
+and whoever is deploying has a shell.
+
+```bash
+ls -t data/outbox | head -1 | xargs -I{} cat data/outbox/{}
+```
+
+But the better answer is to not need it. Before handing a site over, in this
+order:
+
+1. **Account → set a password** for at least one administrator.
+2. **Settings → sign-in →** *Password*, or *Password, or a one-time code* if
+   codes should stay available once mail is configured.
+3. *Then* take the backup.
+
+Settings refuses to switch to passwords-only when the administrator making
+the change has none, which is the same trap seen from the other side.
+
 ## Keeping it running
 
 - **Install:** `./start.sh` and `./scripts/autostart.sh install` run `npm ci`
