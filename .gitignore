@@ -30,6 +30,14 @@ assets/*
 !assets/site-structure.md
 !assets/demowww/
 
+# Environment files. These carry the secrets that are deliberately not in
+# Settings - the Brevo key, whatever a deployment needs - and a committed one
+# is a leaked one that is hard to un-leak. Listed before anyone writes the
+# first .env rather than after somebody pushes it.
+.env
+.env.*
+!.env.example
+
 # A site's own theme, found by convention when it sits here (see config.js).
 # Its own repository, or just files - either way not this one's business.
 /theme/
