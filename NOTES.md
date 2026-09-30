@@ -959,6 +959,47 @@ half-done. Kept short.
     keystroke landing on `<body>`.
   - The target is clamped when the section draws, not when rows change, so
     shrinking a table can never leave the picker aimed at a row that is gone.
+- **Two lines of this repo, meant to drift** (2026-09-30). The plan recorded on
+  25 September was that `macsmoser/slice-cms` had become an orphan and should
+  be archived before somebody cloned the wrong one. **That is reversed.** It is
+  now the private line: the company keeps `JohnDoeInvest/jdi-cms`, and the
+  personal repo is developed in a different direction, with no obligation in
+  either direction and no intention of ever merging back. Archiving it would
+  have thrown away the thing it is now for.
+  - **The orphan was simply older, not different.** Measured before deciding:
+    3 commits behind, **0 ahead**, and `git merge-base --is-ancestor` confirms
+    a straight ancestor. The three are `dotenv` for production, the `.gitignore`
+    rule refusing `.env`, and a documentation commit. So the private line
+    starts by taking all three rather than re-deriving them - a fork that
+    begins three commits stale would meet the same config-loading question
+    again for no reason. The `v1.0.0` tag exists only on the company side.
+  - **Each clone keeps exactly one remote.** The two repos share history, which
+    is what makes the mistake possible: a second remote would accept a push and
+    silently mix the lines. With one remote a wrong `git push` lands somewhere
+    harmless, so the safeguard is the topology rather than anybody's care.
+    Levelling the private line therefore used a one-shot `git fetch` by URL and
+    `merge --ff-only` - no named remote to forget to remove, and a loud refusal
+    if the histories are not as measured.
+  - **The folder is named after the line, not the product.** The development
+    checkout here is `~/Dev/jdi-cms`, renamed from `~/Dev/slice-cms` the same
+    day, because a folder called `slice-cms` that pushes to the company is a
+    trap set for a tired afternoon. The *site* folder is the opposite case and
+    must never be renamed: `start.sh` derives the launchd label from
+    `basename "$PWD"`, so `~/Dev/smartaremat` renamed is an autostart agent
+    pointing at a path that no longer exists.
+  - **The machines carry the separation too.** Company work on the M2, the
+    private line on the M5. Not a technical requirement - it is the same
+    reasoning as the folder name, one level up, where a mistake is even harder
+    to make because the wrong repo is not on the disk at all.
+  - **What a fork inherits that it must not keep.** The clone arrives with this
+    `CLAUDE.md`, which states the repo belongs to the company, names a
+    colleague who runs its servers, and lists company work as what to do next.
+    Accurate here, wrong there, and stated as instruction rather than history -
+    so rewriting it is the private line's first commit, ahead of any code.
+  - **It sharpens the theme question.** `macsmoser/smartaremat-theme` sitting
+    in a personal account was untidy while that account held nothing else. Now
+    that it holds the *private* line, the company's brand living beside it is
+    exactly the confusion this separation exists to remove.
 
 ## Next up
 
