@@ -1264,6 +1264,85 @@ half-done. Kept short.
   Answering the question as asked: the simplification is right for the first
   two and hides teeth in the third.
 
+- **What is coming, as described on 2026-09-25.** Requirements from a
+  conversation rather than a ticket, written down because a Friday afternoon
+  is exactly what is hard to reconstruct. Nothing here is decided; meetings
+  were still to happen.
+
+  **stackys.com, ported off Prismic.** Looked at while it was still live. What
+  is on it today: a real shop (cart, `/sv/kassa`, customer accounts at
+  `/sv/konto`, prices, a stock banner — though some products already link out
+  to Mylla.se), two languages behind a `/sv/` prefix, dozens of recipes with
+  structured fields (servings, cook time, ingredients, method), articles
+  (Matprat) and ordinary pages.
+  - **Two of those go away by decision**: the site becomes Swedish only,
+    which deletes the multi-language hairball outright, and the cart is
+    "might be thrown out", under discussion.
+  - **If the shop stays, it should not come here.** Cart, checkout, payment,
+    orders, stock, tax is a second product, not a feature, and the first
+    payment SDK ends the dependency rule for good. The clean split is the CMS
+    owning the content and the shop living wherever it is best served -
+    for which there is already precedent on that site.
+  - **The one thing to find out first**: whether the Prismic content API is
+    reachable. The guessable subdomains 404, so somebody needs the real repo
+    name from the Prismic dashboard. It is the difference between a migration
+    script and a person retyping forty recipes.
+
+  **Modules, which is the more interesting half.** Not one recipe type but
+  three, plus a tool that is not content at all:
+
+  | | |
+  | --- | --- |
+  | Recipes v1 | a family of 1–6 |
+  | Recipes v2 | industrial production |
+  | Recipes v3 | municipal large-scale, 10–250 (schools, hospitals) |
+  | Quick-quote | a production cost calculator visitors use on the site |
+
+  - **The recipe question is a content-model one, and wants a chef.** Is a
+    moussaka for 250 the same recipe as one for 6, scaled? Arithmetically
+    yes; in practice no - nobody fries 40kg of aubergine in a pan, and the
+    method genuinely differs. Separate documents sharing a type is one
+    design; one derived from another is a very different one. Decide that
+    before modelling anything.
+  - **The calculator is the fork in the road.** Everything else described is
+    content. A calculator is *logic*, and the first thing that cannot be
+    expressed as slices and objects at all.
+
+  **The shape the asker has in mind**, which is a good one: *custom slices you
+  drop onto any page*, and - the real requirement - **site A needs one, site B
+  should not have editor clutter for something it never uses.** Not plugins
+  exactly; per-site palette composition.
+
+  - **It maps onto what already exists.** Objects are a registry: `OBJECTS`
+    and `OBJECT_ORDER` in `src/lib/objects.js`, drawn by `render.js`, edited
+    by `cms-editor.js`. A custom slice is a new entry, not a new concept.
+    Adding one today touches those three files - not terrible, but three
+    *core* files per module, on every site whether it uses it or not.
+  - **Two separable features, and the cheap one is worth having alone:**
+    1. *Which objects this site offers* - a per-site palette. `OBJECT_ORDER`
+       is already a list and there is already precedent for filtering it
+       (`allowedInArticle`, `allowedInForm`). An afternoon, useful with zero
+       custom modules: smartaremat.se offers Code and Embed today and uses
+       neither.
+    2. *Object kinds that live outside the core* - bigger, and only needed
+       once the first custom one exists.
+
+    Doing (1) first establishes "the set of kinds is per-site data", which is
+    exactly the seam (2) needs. An incremental path rather than an
+    architecture.
+  - **Do not build a module system for one module.** Build the first bespoke,
+    the second bespoke, and let the third say what the abstraction is - every
+    good plugin architecture was extracted from three working examples, and
+    the ones designed up front abstract the wrong axis. **But put the seam in
+    from day one anyway**: a calculator that lands in `render.js` beside the
+    buttons and tables is real work to extract later, and one behind a folder
+    boundary is nearly free. Five minutes of thought, not a design phase.
+  - **A custom slice cannot live in the theme**, even though the theme is the
+    existing per-site folder, because the rule is that a theme owns
+    everything *around* the content and nothing inside it - and a calculator
+    slice is content. That the rule says where these do *not* belong is a
+    decent sign it is a real rule.
+
 - **Forms, before this is packaged.** The screen works and is in use, but two
   things were noticed and not settled:
   - A form can hold a Heading, Text, Divider and Spacer as well as fields.
