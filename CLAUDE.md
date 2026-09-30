@@ -24,10 +24,24 @@ and `www/media/`. There is no second copy of the CMS any more and nothing to
 carry between them: a fix made here reaches that site with `git pull`.
 
 **The repo moved to `JohnDoeInvest/jdi-cms` on 25 September**, when it stopped
-being one person's and became the company's. `macsmoser/slice-cms` is an
-orphan now and should be archived before somebody clones the wrong one.
-Henrik Olsson runs the servers and is the only other person working in it —
-four people in the company, one of them on deployment.
+being one person's and became the company's. Henrik Olsson runs the servers and
+is the only other person working in it — four people in the company, one of
+them on deployment.
+
+**There are two lines of this code now, and they are meant to drift**
+(2026-09-30). This repo is the company's. `macsmoser/slice-cms` is a private
+line developed in a different direction, on a different machine, with no
+obligation in either direction — it is **not** an orphan to be archived, which
+is what this file said until that date. Nothing here needs to know about it;
+the point of the separation is that neither side carries the other. The
+reasoning, and the one-remote-per-clone rule that keeps a stray push from
+mixing them, is in NOTES under "Two lines of this repo, meant to drift".
+
+**The development checkout is `~/Dev/jdi-cms`** — named after the line rather
+than the product, so the path itself says which repo a push reaches. The site's
+own folder is the opposite case and **must never be renamed**: `start.sh`
+derives the launchd label from `basename "$PWD"`, so renaming `~/Dev/smartaremat`
+leaves an autostart agent aimed at a path that is gone.
 
 The brand is a repository of its own — a `tokens.css` and a README — because
 a theme is per-site where this is shared, and a designer should be able to
@@ -118,8 +132,12 @@ Two standing jobs with no ticket:
   clone is a fair test. Run them in a *deployment* too: a test that reads its
   expectations off the environment passes on a developer's copy and fails on
   the site, which has happened once already.
-- **Two loose ends from the move**: the theme repo is still in a personal
-  account, and `macsmoser/slice-cms` is an orphan that should be archived.
+- **One loose end from the move**: the theme repo is still in a personal
+  account. That mattered mildly when it was the only thing there; since
+  30 September that account also holds the private line, so the company's
+  brand sitting beside it is the confusion the separation exists to remove.
+  (The second loose end used to be archiving `macsmoser/slice-cms`. That is
+  off — see "two lines of this code" above.)
 
 ## Not in this repo
 
