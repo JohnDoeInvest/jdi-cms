@@ -1,0 +1,98 @@
+# The two suites, on every pull request.
+#
+# This repository has users: a change here reaches a running site on the next
+# `git pull`, and npm test plus the e2e suite are what stand between the two.
+# Until now both only ever ran on whichever laptop made the change, which is
+# the one place a passing run proves least - a test that reads its
+# expectations off the environment passes on a developer's copy and fails on
+# the site, which has happened here once already.
+#
+# Nothing is deployed from here. These jobs only ever report.
+name: Tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# A second push to the same branch makes the first run pointless.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  unit:
+    name: Unit tests (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Both ends of what package.json claims to support: the declared
+        # minimum, where node:sqlite first exists, and the version the site
+        # actually runs. A floor nobody tests is a floor nobody keeps.
+        node: ['22', '26']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm test
+
+  e2e:
+    name: End-to-end
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+
+      # Start, set up and test in one step: a server backgrounded in one step
+      # and used in the next is at the mercy of how the runner cleans up
+      # between them.
+      - name: Run the suite against a fresh installation
+        run: |
+          set -euo pipefail
+          export DB_PATH="$RUNNER_TEMP/cms.db" PORT=8099
+          LOG="$RUNNER_TEMP/server.log"
+
+          node src/server.js > "$LOG" 2>&1 &
+          SERVER=$!
+          trap 'kill $SERVER 2>/dev/null || true' EXIT
+
+          # A fresh database prints the address for making the first admin.
+          for _ in $(seq 1 60); do
+            grep -q 'First run' "$LOG" && break
+            sleep 0.5
+          done
+          grep -q 'First run' "$LOG" || { echo "the server never came up:"; cat "$LOG"; exit 1; }
+
+          TOKEN=$(grep -o 'token=[A-Za-z0-9_-]*' "$LOG" | head -1 | cut -d= -f2)
+          # Thrown away with the runner. It exists because the suite signs in
+          # for real rather than using the login bypass, which is the point of
+          # it: that flow is the one thing standing between the internet and
+          # everything below.
+          PASSWORD=$(node -e "console.log(require('node:crypto').randomBytes(18).toString('base64url'))")
+
+          curl -sS --fail-with-body -o /dev/null -X POST "http://localhost:$PORT/cms/setup" \
+            --data-urlencode "full_name=CI" \
+            --data-urlencode "email=ci@example.test" \
+            --data-urlencode "password=$PASSWORD" \
+            --data-urlencode "confirm=$PASSWORD" \
+            --data-urlencode "token=$TOKEN"
+
+          SITE_URL="http://localhost:$PORT" \
+          E2E_EMAIL=ci@example.test \
+          E2E_PASSWORD="$PASSWORD" \
+            node scripts/e2e.mjs
+
+      - name: What the server said, if the suite failed
+        if: failure()
+        run: cat "$RUNNER_TEMP/server.log"
