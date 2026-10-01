@@ -4,6 +4,7 @@ import { mediaUrl, kindOf, pictureHtml, SIZES } from '../lib/media.js';
 import { icon } from './icons.js';
 import { formatDate, stripTagsSafe } from './helpers.js';
 import { slugify } from '../lib/util.js';
+import { issue, HONEYPOT, TOKEN, EVIDENCE } from '../lib/formguard.js';
 import { parseEmbed } from '../lib/embed.js';
 import { countryOptions } from '../lib/phone.js';
 import { breadcrumbs } from './layout.js';
@@ -235,7 +236,7 @@ export function renderField(obj, ctx = {}) {
      because a form control still needs a name to post under.
      Note the *e-mail* is written from the label, not from this: the name
      reaches the reader only for a field that has no label at all. */
-  const name = p.name || slugify(p.label, '') || `f_${obj.id}`;
+  const name = fieldKey(obj);
   const id = `ff-${obj.id}`;
   const values = ctx.flash?.formValues || {};
   const value = values[name] ?? '';
@@ -357,9 +358,21 @@ function renderForm(obj, ctx, s) {
     ? joinHtml(form.objects.map((obj) => renderObject(obj, ctx)))
     : `<p class="b-field__hint">${esc(words.formEmpty)}</p>`;
 
+  /* The honeypot is skipped when a real field already answers to that name:
+     `fieldKey` lets an author set props.name to anything, and reading a
+     visitor's own answer as a robot is the one failure this must not have. */
+  const trap = !formFields(form).some((f) => fieldKey(f) === HONEYPOT);
+
   return `<form class="b-form" method="post" action="/form/submit" novalidate${s}>
     <input type="hidden" name="page" value="${esc(ctx.path || '')}">
     <input type="hidden" name="form" value="${esc(obj.id)}">
+    <input type="hidden" name="${TOKEN}" value="${esc(issue(obj.id, ctx.path || ''))}">
+    <input type="hidden" name="${EVIDENCE}" value="" data-guard>
+    ${trap ? `<div class="b-form__trap" aria-hidden="true">
+      <label for="ff-trap-${esc(obj.id)}">Website</label>
+      <input id="ff-trap-${esc(obj.id)}" type="text" name="${HONEYPOT}"
+             value="" tabindex="-1" autocomplete="off">
+    </div>` : ''}
     ${error ? `<p class="b-form__status b-form__status--error">${esc(error)}</p>` : ''}
     ${body}
     <div><button class="${buttonClasses({
@@ -367,6 +380,17 @@ function renderForm(obj, ctx, s) {
     })}" type="submit">${esc(form.submit_label || words.send)}</button></div>
   </form>`;
 }
+
+/**
+ * What a field posts under.
+ *
+ * Exported because three places need the same answer - the input's name
+ * attribute, /form/submit reading it back, and the honeypot checking it is
+ * not about to collide with a real field. Two answers would mean a field
+ * nobody could fill in.
+ */
+export const fieldKey = (obj) =>
+  obj.props?.name || slugify(obj.props?.label, '') || `f_${obj.id}`;
 
 /** Every field object inside a form's blocks, in the order they are drawn. */
 export const formFields = (form) =>

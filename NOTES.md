@@ -959,6 +959,19 @@ half-done. Kept short.
     keystroke landing on `<body>`.
   - The target is clamped when the section draws, not when rows change, so
     shrinking a table can never leave the picker aimed at a row that is gone.
+- **A backup no longer fails because one upload went.** Found 2026-10-01 by a
+  test suite that had become intermittent. `buildBackup` walked the uploads,
+  then read each file - and anything deleted between the walk and the read
+  threw `ENOENT` out of the whole archive. In the suite that was one test file
+  removing its own fixture while another was building a backup; on a running
+  site it is an editor deleting a media item while an administrator downloads
+  one, and the download 500s rather than producing an archive.
+  - A missing upload is skipped now instead of thrown. One file absent is not
+    worth losing a backup over, and the alternative - locking the uploads
+    folder for the length of a download - is far worse.
+  - The manifest counts **what actually went in**, not what the walk found a
+    moment earlier, because a manifest that overstates its own archive is the
+    one thing a restore cannot survive being wrong about.
 - **Two lines of this repo, meant to drift** (2026-09-30). The plan recorded on
   25 September was that `macsmoser/slice-cms` had become an orphan and should
   be archived before somebody cloned the wrong one. **That is reversed.** It is
@@ -1002,6 +1015,130 @@ half-done. Kept short.
     exactly the confusion this separation exists to remove.
 
 ## Next up
+
+- **A form should be able to tell a person from a script.** Raised
+  2026-10-01, for the forms already on pages. Paper first; nothing below is
+  built.
+
+  **A third-party captcha is not available to this repo**, and that is settled
+  rather than open. "Nothing is fetched from anywhere" took Google's fonts off
+  every page because each view handed a third party the visitor's address,
+  browser and the URL they were reading. reCAPTCHA, hCaptcha and Turnstile do
+  exactly that, and they do it on the one page where somebody is about to type
+  their name, their e-mail and a message - the worst page on the site to put a
+  beacon on, and the same law applies to it as to a font. Whatever goes in is
+  self-hosted, which also means it is ours to understand. Worth saying plainly
+  what this replaces rather than merely avoids: reCAPTCHA is what the
+  company's other sites have been using, so this is the same removal the
+  fonts were, one page later.
+
+  **Mouse movement cannot be the gate**, which is worth settling first because
+  it is the obvious suggestion. A phone has no mouse, a keyboard-only visitor
+  moves none, a screen reader moves none, and scripting may be off entirely.
+  Gating on it would turn away real people and most of the mobile traffic, and
+  the site would look broken to exactly the visitors least able to work out
+  why. So interaction is read as *any* human signal, and its absence is never
+  by itself a refusal.
+
+  **Five layers, none of them clever, each reusing something already here:**
+  - **A honeypot field** the styles hide and a script never touches. It needs
+    nothing issued and no JavaScript, so it is the one layer that works for
+    every visitor, and a filled one is the clearest signal available.
+  - **A signed token per *placed* form**, an HMAC over the form object's id,
+    the page and the time it was issued, keyed by a secret minted into
+    settings the way `gate.js` mints `page_secret`. It makes a submission
+    prove it came from a form this site drew: a script POSTing straight at
+    `/form/submit` has no token, and a captured one cannot be replayed.
+  - **The token's timestamp is also the clock.** A form completed in under a
+    second or two was not typed by anybody, and the issue time is already in
+    the thing being verified, so this costs nothing extra.
+  - **Interaction evidence from `site.js`**, which is already deferred on
+    every public page: `pointermove`, `touchstart`, `keydown`, `scroll` or a
+    field taking focus - whichever comes first - sets a field. Any one of them
+    is a human; none of them is a script in a hurry.
+  - **A sliding window per address**, the shape `auth.js` already uses for
+    sign-in: counts in memory, swept when the map grows, because a restart is
+    not something an attacker gets to ask for.
+
+  **Hard and soft, with a switch between them.** A filled honeypot, a missing
+  or forged token and a replayed one are never a person, so those always
+  refuse. The soft signals - too fast, no interaction evidence - are a
+  judgement, and what happens to them is a setting:
+  - `flag` (the default) accepts the message, delivers it, and marks it. A
+    real enquiry is never lost, and the mark is something to sort by.
+  - `refuse` turns the soft signals hard, for a site drowning in spam.
+
+  **Where the mark has to show, and the hole found while writing this.**
+  `messages.list()` has no caller: submissions are stored and nothing in the
+  CMS reads them back, and `dashboard.js` imports the model without using it.
+  So a flag written only to the row would be invisible, and the default
+  setting would do nothing anybody could see. The mark therefore goes **in the
+  delivered mail** as well as on the row - a prefix on the outgoing subject,
+  which is the one thing a mail client can filter on, and a line in the body
+  saying why. The stored subject stays clean; only the mail carries the
+  prefix. A messages screen is the proper home for this and is a separate
+  piece of work, listed below.
+
+  The reason it is a setting at all is that nobody here knows yet how the
+  inbox will be worked - Henrik handles what arrives - and that is his call to
+  make later without a code change. `signin_method` is the precedent: an enum
+  in `SCHEMA`, drawn with the `select()` helper, validated against an exported
+  list on save. The switch governs **only** the soft half, so it cannot be set
+  to a position that turns the real protection off.
+
+  `messages` gains a column for it, through `LATER_COLUMNS` in `db/index.js` -
+  a guarded `ALTER TABLE` that runs once and is a no-op after, which is what
+  that list is for.
+
+  **What this does not do.** It stops drive-by spam, which is nearly all form
+  spam, and it stops nothing driven by a person who wants through. No
+  invisible scheme does, and one that claimed to would be lying - the honest
+  version of Henrik's "to some extent". The thing it buys is that the cost of
+  spamming this form stops being zero.
+
+  **The thresholds are guesses, so the submission records what was measured.**
+  Henrik's objection on 2026-10-01 - that this kind of thing usually wants a
+  lot of data to come out well - is right about exactly two of the five
+  layers. The honeypot is binary, the token is cryptographic and replay is
+  deterministic; none of those improves with traffic. The two that *are*
+  tuned on guesswork are the fill time and the interaction evidence, and the
+  design already refuses to let them refuse anything: on `flag` they travel
+  with the message rather than stopping it, which is the structural answer to
+  having no data yet.
+  - What is missing is not a cleverer guess, it is the measurement. Each
+    submission stores **how long it took** and **whether anything touched
+    it** alongside the reason it was marked - three plain columns rather than
+    a blob, so the question "what would this threshold have refused?" is one
+    SQL query over real traffic rather than an argument.
+  - That is also the only way to learn the **false-positive rate**, which
+    nobody can know today, and the only honest basis for deciding whether
+    `refuse` is safe to switch on for a given site.
+  - It is worth saying plainly what the alternative buys: a commercial
+    captcha's advantage *is* that data, seen across millions of sites. That
+    is a real argument, and it costs precisely the thing the fonts decision
+    already paid to avoid. The trade is recorded here rather than settled
+    again each time it comes up.
+
+  **The seam is the form object, not the page.** The submit handler already
+  finds the placed form through `visibleBlocks(page.blocks)`, so a form in a
+  hidden slice is not on the page - and gets no token either. Drop a Form
+  object onto a slice and the protection arrives with it; there is nothing to
+  switch on per page.
+
+  **Any refusal a visitor can read goes in `words.js`**, in `en` and `sv`
+  both, because it is the site speaking rather than the author.
+
+- **Nothing reads the messages back.** Found 2026-10-01 while writing the
+  entry above. Every form submission is stored in `messages` - subject,
+  sender, body, which page, which form, whether it was delivered - and the
+  only way to read any of it is the mail, or opening the database. The model
+  has a `list()` nobody calls and `dashboard.js` imports it unused. So a site
+  whose mail is misconfigured collects enquiries into a hole, and the comment
+  in `/form/submit` claiming "it is in the CMS's messages either way" is true
+  about the row and misleading about anybody seeing it. A screen that lists
+  them, newest first, showing delivered and flagged state, is small. It also
+  carries its own question - deleting them, which is the first content in this
+  CMS a visitor rather than an author created.
 
 - **What a theme is, and how far it reaches.** Raised 2026-09-23, after
   smartaremat.se became the first one. Two questions arrived together and turn

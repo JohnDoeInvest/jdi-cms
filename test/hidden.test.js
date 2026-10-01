@@ -16,6 +16,7 @@ const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'slice-hidden-'));
 process.env.DB_PATH = path.join(dir, 'cms.db');
 const { pages, forms, messages } = await import('../src/models.js');
 const { createApp } = await import('../src/app.js');
+const { issue, TOKEN, EVIDENCE } = await import('../src/lib/formguard.js');
 
 const server = await new Promise((resolve) => {
   const s = createApp().listen(0, '127.0.0.1', () => resolve(s));
@@ -63,11 +64,19 @@ test('a hidden slice is left out of the page, not covered up', async () => {
 });
 
 test('a form in a hidden slice takes no submission', async () => {
+  /* Carrying a real token, so what is being measured is the hidden slice and
+     not the form guard refusing an unsigned post - which looks the same from
+     outside and would make this pass for the wrong reason. */
   const post = (placed) => fetch(`${base}/form/submit`, {
     method: 'POST',
     redirect: 'manual',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ page: '/kampanj', form: placed }),
+    body: new URLSearchParams({
+      page: '/kampanj',
+      form: placed,
+      [TOKEN]: issue(placed, '/kampanj', Date.now() - 5000),
+      [EVIDENCE]: '1',
+    }),
   });
   const shown = await post('shownform');
   assert.equal(shown.status, 200);

@@ -312,5 +312,12 @@ CREATE TABLE IF NOT EXISTS messages (
   -- an existence of their own.
   form_id    INTEGER REFERENCES forms(id) ON DELETE SET NULL,
   delivered  INTEGER NOT NULL DEFAULT 0,
+  -- What the form guard made of it. Empty means nothing tripped; otherwise a
+  -- key from SOFT in src/lib/formguard.js saying which signal did.
+  suspect    TEXT NOT NULL DEFAULT '',
+  -- What was measured, kept so the thresholds can be argued from traffic
+  -- rather than guessed twice. Null when no trustworthy issue time existed.
+  fill_ms    INTEGER,
+  touched    INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );

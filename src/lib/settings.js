@@ -43,6 +43,15 @@ export const SCHEMA = {
   contact_email:    { type: 'text', default: config.mail.contactTo,
                       label: 'Default form recipient', hint: 'Where forms deliver unless a form overrides it.' },
 
+  /* What happens to a submission the form guard is only *unsure* about - see
+     GUARD_MODES in src/lib/formguard.js. It governs the soft signals alone:
+     a filled honeypot or a forged token is never a person, and no position of
+     this setting lets one through. Defaults to flagging, because losing a
+     real enquiry is worse than receiving spam. */
+  form_guard:       { type: 'text', default: 'flag',
+                      label: 'Submissions that look automated',
+                      hint: 'Obvious bots are always refused. This is only about the uncertain ones.' },
+
   /* Which page a new article appears under, and so what its address starts
      with. A default rather than a rule: each article can be moved, and the
      address is frozen once it is published. */

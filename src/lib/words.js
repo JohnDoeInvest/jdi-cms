@@ -44,6 +44,16 @@ const en = {
   needsPhone:    (label) => `${label} (a valid number)`,
   mailSubject:   'Message from the website',
   unknownSender: 'unknown sender',
+  /* One sentence for every refusal that is not throttling, so it does not
+     say which check tripped - and actionable, because the person reading it
+     may be a real one the soft signals got wrong. Reloading issues a fresh
+     token, and a second attempt is no longer a suspiciously fast one. */
+  formRefused:   'That did not go through. Please reload the page and try again.',
+  formTooMany:   'Too many submissions from here. Wait a few minutes and try again.',
+  /* On the mail, not the page: what the recipient sees on something the
+     site's own checks are unsure about. */
+  spamPrefix:    'possible spam',
+  spamNote:      'The site\'s own checks were unsure about this one.',
 
   // The password gate
   password:      'Password',
@@ -85,6 +95,10 @@ const sv = {
   needsPhone:    (label) => `${label} (ett giltigt telefonnummer)`,
   mailSubject:   'Meddelande från webbplatsen',
   unknownSender: 'okänd avsändare',
+  formRefused:   'Det gick inte igenom. Ladda om sidan och försök igen.',
+  formTooMany:   'För många försök härifrån. Vänta några minuter och försök igen.',
+  spamPrefix:    'möjlig skräppost',
+  spamNote:      'Webbplatsens egna kontroller var osäkra på det här meddelandet.',
 
   password:      'Lösenord',
   passwordNote:  'Den här sidan är skyddad. Ange lösenordet för att se den.',

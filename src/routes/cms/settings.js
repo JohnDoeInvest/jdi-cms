@@ -7,7 +7,13 @@ import { SCHEMA, all, set, parseLinks, linksToText } from '../../lib/settings.js
 import { media, pages } from '../../models.js';
 import { config } from '../../config.js';
 import { SIGN_IN_METHODS } from '../../lib/auth.js';
+import { GUARD_MODES } from '../../lib/formguard.js';
 import { buildBackup, backupSummary } from '../../lib/backup.js';
+
+const GUARD_LABELS = {
+  flag: 'Let them through, marked as possible spam',
+  refuse: 'Refuse them',
+};
 
 const METHOD_LABELS = {
   password: 'Password',
@@ -121,8 +127,14 @@ export function registerSettings(router, guard) {
 
         <section class="panel">
           <h2 class="h-section" style="margin-bottom:var(--ui-s-4)">Forms</h2>
-          ${field({ label: SCHEMA.contact_email.label, name: 'contact_email',
-            value: values.contact_email, type: 'email', hint: SCHEMA.contact_email.hint })}
+          <div class="stack">
+            ${field({ label: SCHEMA.contact_email.label, name: 'contact_email',
+              value: values.contact_email, type: 'email', hint: SCHEMA.contact_email.hint })}
+            ${select({ label: SCHEMA.form_guard.label, name: 'form_guard',
+              value: values.form_guard,
+              options: GUARD_MODES.map((value) => ({ value, label: GUARD_LABELS[value] })),
+              hint: SCHEMA.form_guard.hint })}
+          </div>
         </section>
 
         <section class="panel">
@@ -204,6 +216,11 @@ export function registerSettings(router, guard) {
         delete fields.signin_method;
         note = 'needs-password';
       }
+    }
+    /* An unknown value would be read as "not flag", so it is dropped rather
+       than stored - the same guard signin_method gets. */
+    if ('form_guard' in fields && !GUARD_MODES.includes(fields.form_guard)) {
+      delete fields.form_guard;
     }
     for (const [key, spec] of Object.entries(SCHEMA)) {
       if (!(key in fields)) continue;
