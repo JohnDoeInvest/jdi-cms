@@ -1490,9 +1490,17 @@ export const users = {
 
 export const messages = {
   create: (data) => run(
-    `INSERT INTO messages (subject, from_email, body, page, form_id, delivered)
-     VALUES (?,?,?,?,?,?)`,
+    `INSERT INTO messages (subject, from_email, body, page, form_id, delivered,
+                           suspect, fill_ms, touched)
+     VALUES (?,?,?,?,?,?,?,?,?)`,
     data.subject, data.from_email, data.body, data.page || '',
-    Number(data.form_id) || null, data.delivered ? 1 : 0),
-  list: (limit = 50) => all(`SELECT * FROM messages ORDER BY created_at DESC LIMIT ${Number(limit)}`),
+    Number(data.form_id) || null, data.delivered ? 1 : 0,
+    data.suspect || '',
+    Number.isFinite(data.fill_ms) ? Math.round(data.fill_ms) : null,
+    data.touched ? 1 : 0),
+  /* `created_at` is `datetime('now')`, accurate to the second, so two
+     messages from the same second have no order of their own - which makes
+     "the newest" arbitrary. The id breaks the tie. */
+  list: (limit = 50) =>
+    all(`SELECT * FROM messages ORDER BY created_at DESC, id DESC LIMIT ${Number(limit)}`),
 };

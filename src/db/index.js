@@ -19,6 +19,9 @@ db.exec(fs.readFileSync(path.join(here, 'schema.sql'), 'utf8'));
  */
 const LATER_COLUMNS = [
   ['users', 'password_hash', "TEXT NOT NULL DEFAULT ''"],
+  ['messages', 'suspect', "TEXT NOT NULL DEFAULT ''"],
+  ['messages', 'fill_ms', 'INTEGER'],
+  ['messages', 'touched', 'INTEGER NOT NULL DEFAULT 0'],
 ];
 for (const [table, column, type] of LATER_COLUMNS) {
   const has = db.prepare(`PRAGMA table_info(${table})`).all().some((c) => c.name === column);

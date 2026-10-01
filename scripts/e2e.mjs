@@ -228,16 +228,34 @@ ok('a form brings no slice of its own', !page.split('<form class="b-form"')[1].s
 ok('has breadcrumbs', page.includes('aria-label="Breadcrumbs"'));
 ok('has meta description', page.includes('content="Beskrivning"'));
 
+/* A browser is handed a fresh, single-use token with every drawn form, so
+   the suite has to be too: re-read the page, lift the token out of it, and
+   post that one. Posting the same token twice is refused on purpose, which
+   is why this re-reads rather than keeping one. `interaction` is what
+   site.js sets the moment anything human happens. */
+const submitForm = async (obj) => {
+  const drawn = String((await req(obj.page)).body);
+  const issued = drawn.match(/name="issued" value="([^"]+)"/)?.[1] || '';
+  return postForm('/form/submit', { ...obj, issued, interaction: '1' });
+};
+
 /* ------------------------------------------------------------ contact form */
 console.log('\n== Forms ==');
 const formId = page.match(/name="form" value="([a-f0-9]+)"/)?.[1];
 ok('form id present in markup', !!formId, String(formId));
-r = await postForm('/form/submit', { page: permalink, form: formId,
+r = await submitForm({ page: permalink, form: formId,
   epost: 'test@exempel.se', meddelande: 'Ett testmeddelande.' });
 ok('accepts a valid submission', r.status === 200 && String(r.body).includes('Tack!'));
-r = await postForm('/form/submit', { page: permalink, form: formId, epost: 'trasig', meddelande: '' });
+r = await submitForm({ page: permalink, form: formId, epost: 'trasig', meddelande: '' });
 ok('rejects an invalid one', String(r.body).includes('Please fill in:'));
 ok('names the offending fields', String(r.body).includes('Meddelande'));
+
+/* The guard itself, from outside: a post that never saw the form is refused,
+   and says the one thing it says for every refusal. */
+r = await postForm('/form/submit', { page: permalink, form: formId,
+  epost: 'bot@exempel.se', meddelande: 'Direkt POST.' });
+ok('an unsigned submission is refused', String(r.body).includes('gick inte igenom')
+  || String(r.body).includes('did not go through'), String(r.status));
 
 /* A phone field is a select and an input answering together. What is stored
    is the one number they make, so a Swedish number written the Swedish way
@@ -247,15 +265,15 @@ ok('the phone field draws its prefix beside its number',
 ok('the prefix list starts on the country the field was given',
   /<option value="SE" selected>/.test(page));
 ok('and does not carry the prefix left out on purpose', !page.includes('(+972)'));
-r = await postForm('/form/submit', { page: permalink, form: formId,
+r = await submitForm({ page: permalink, form: formId,
   epost: 'test@exempel.se', meddelande: 'Med telefon.',
   telefon_prefix: 'SE', telefon: '070-123 45 67' });
 ok('accepts a locally written number', r.status === 200 && String(r.body).includes('Tack!'));
-r = await postForm('/form/submit', { page: permalink, form: formId,
+r = await submitForm({ page: permalink, form: formId,
   epost: 'test@exempel.se', meddelande: 'Med skräp.',
   telefon_prefix: 'SE', telefon: '12' });
 ok('rejects one too short to dial', String(r.body).includes('Telefon'));
-r = await postForm('/form/submit', { page: permalink, form: formId,
+r = await submitForm({ page: permalink, form: formId,
   epost: 'test@exempel.se', meddelande: 'Med eget prefix.',
   telefon_prefix: 'SE', telefon: '+44 20 7123 4567' });
 ok('a number written in full keeps its own country',

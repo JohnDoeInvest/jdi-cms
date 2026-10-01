@@ -107,6 +107,32 @@
     }
   });
 
+  /* ------------------------------------------- form interaction evidence
+     One hidden field per drawn form, filled the first time anything at all
+     happens. Deliberately not mouse-only: a phone has no mouse, a keyboard
+     user moves none and a screen reader moves none, so any one of these
+     counts. Found by attribute rather than by name, so the server owns what
+     the field is called (EVIDENCE in src/lib/formguard.js).
+
+     Absence of this is a soft signal on the server, never a refusal by
+     itself - a visitor with scripting off still gets to send a message. */
+  var marks = document.querySelectorAll('.b-form [data-guard]');
+  if (marks.length) {
+    var options = { passive: true, capture: true };
+    var signals = ['pointerdown', 'pointermove', 'touchstart', 'keydown', 'scroll', 'focusin'];
+    var noted = false;
+
+    function note() {
+      if (noted) return;
+      noted = true;
+      // One pass, then stop listening: this has nothing to say twice.
+      for (var i = 0; i < marks.length; i++) marks[i].value = '1';
+      signals.forEach(function (type) { document.removeEventListener(type, note, options); });
+    }
+
+    signals.forEach(function (type) { document.addEventListener(type, note, options); });
+  }
+
   /* -------------------------------------------------- contact form gate
      Frame 3.3: submit stays dimmed until a subject is chosen, the e-mail
      looks valid and the message has content. Re-checked on the server. */

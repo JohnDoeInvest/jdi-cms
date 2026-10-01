@@ -492,6 +492,16 @@
 .b-form__status--ok { background: var(--success-tint); color: var(--success); }
 .b-form__status--error { background: var(--danger-tint); color: var(--danger); }
 .b-form .b-checkbox { display: flex; align-items: center; gap: var(--s-2); font-size: var(--fs-base); }
+/* The honeypot. Hidden here rather than with site.css's .visually-hidden,
+   because the editor's canvas draws through this file and not that one - an
+   author must not find a stray "Website" box in their form either. Off-screen
+   rather than display:none, which is the first thing a scraper skips; the
+   markup also carries aria-hidden and tabindex="-1", so nothing a real
+   visitor uses can reach it. */
+.b-form__trap {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+}
 
 @media (max-width: 760px) {
   /* Every slice stacks and fills the screen on a phone, whatever it was asked

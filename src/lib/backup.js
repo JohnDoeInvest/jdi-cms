@@ -220,13 +220,28 @@ export function buildBackup({ now = new Date() } = {}) {
   const files = [...contentFiles(), ...themeFiles()];
   const day = now.toISOString().slice(0, 10);
 
+  /* Read before the manifest is written, because a file can go between the
+     walk and the read: somebody deleting a media item while a backup is being
+     built is an ordinary afternoon, and it used to throw ENOENT and lose the
+     whole archive. One upload that vanished is not worth that, so it is left
+     out - and the manifest then counts what actually went in rather than what
+     was on disk a moment earlier. */
+  const carried = [];
+  for (const f of files) {
+    try {
+      carried.push({ name: f.rel, data: fs.readFileSync(f.full), date: fs.statSync(f.full).mtime });
+    } catch (err) {
+      if (err.code !== 'ENOENT') throw err;
+    }
+  }
+
   const full = {
     format: 'slice-backup/1',
     made: now.toISOString(),
     site: { name: summary.site, url: config.siteUrl },
     cms: { commit: cmsCommit() },
     database: { rows: summary.rows, integrity: manifest.integrity },
-    uploads: { files: files.length, bytes: files.reduce((n, f) => n + f.size, 0) },
+    uploads: { files: carried.length, bytes: carried.reduce((n, f) => n + f.data.length, 0) },
     /* The theme travels inside, always as `theme/`, which is where an
        installation looks for one without being told. Where it happened to
        live on the machine this came from is recorded and not reproduced. */
@@ -240,7 +255,7 @@ export function buildBackup({ now = new Date() } = {}) {
     { name: 'manifest.json', data: Buffer.from(`${JSON.stringify(full, null, 2)}\n`) },
     { name: 'README.txt', data: Buffer.from(readmeFor(summary, day)) },
     { name: 'data/cms.db', data: dbBytes, date: now },
-    ...files.map((f) => ({ name: f.rel, data: fs.readFileSync(f.full), date: fs.statSync(f.full).mtime })),
+    ...carried,
   ], { now });
 
   return {

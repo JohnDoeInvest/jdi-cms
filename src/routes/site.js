@@ -5,11 +5,12 @@ import { isEmail } from '../lib/util.js';
 import { pages, articles, categories, menus, media, messages, forms } from '../models.js';
 import { walkObjects, visibleBlocks } from '../lib/objects.js';
 import { isCountry, dialFor, joinPhone, isDiallable } from '../lib/phone.js';
-import { slugify } from '../lib/util.js';
 import { siteLayout } from '../views/layout.js';
 import {
-  renderBlocks, feedItems, articleCard, articleHref, articleImg, formFields,
+  renderBlocks, feedItems, articleCard, articleHref, articleImg, formFields, fieldKey,
 } from '../views/render.js';
+import { verdict, HONEYPOT } from '../lib/formguard.js';
+import { get as setting } from '../lib/settings.js';
 import { mediaUrl, fallbackUrl, SIZES } from '../lib/media.js';
 import { formatDateLong, formatDate } from '../views/helpers.js';
 import { sendMail, contactEmail } from '../lib/mail.js';
@@ -78,11 +79,10 @@ export function buildContext(req, url) {
 /**
  * The key a field posts under.
  *
- * The same rule renderField uses, and it has to be: the form writes the name
- * attribute and this reads it back, so two answers would mean a field nobody
- * could ever fill in.
+ * Imported rather than repeated: the form writes the name attribute and this
+ * reads it back, so two answers would mean a field nobody could ever fill in.
+ * It used to be a second copy of the same expression, here.
  */
-const fieldKey = (field) => field.props.name || slugify(field.props.label, '') || `f_${field.id}`;
 
 /** Look up every media item a page references in one query. */
 function mediaFor(blocks) {
@@ -390,7 +390,25 @@ export function registerSiteRoutes(router) {
       }
     }
 
+    /* Is this a person? Asked after the values are collected rather than
+       before, so a submission the soft signals get wrong comes back with
+       everything still in it - losing somebody's message is the expensive
+       mistake here, not showing them an error. */
+    const seen = verdict({
+      mode: setting('form_guard'),
+      objId: placed.id,
+      path: back,
+      fields,
+      from: req.ip ?? req.socket?.remoteAddress ?? '',
+      honeypotLive: !definition.some((f) => fieldKey(f) === HONEYPOT),
+    });
+
     const flash = { formValues: values };
+    if (seen.refuse) {
+      flash.formErrorId = placed.id;
+      flash.formError = seen.refuse === 'tooMany' ? ctx.words.formTooMany : ctx.words.formRefused;
+      return html(res, renderPage(page, { ...ctx, path: back }, flash));
+    }
     if (!definition.length || missing.length) {
       flash.formErrorId = placed.id;
       flash.formError = missing.length
@@ -410,20 +428,33 @@ export function registerSiteRoutes(router) {
 
     /* With no recipient anywhere the message is still kept - it is in the
        CMS's messages either way - there is just nobody to mail it to. */
+    /* The mark goes on the *mail*, because that is the only place anybody
+       reads a submission today - nothing in the CMS lists them yet (NOTES).
+       A prefix is what a mail client can filter on; the stored subject and
+       body stay exactly as sent. */
+    const mailSubject = seen.suspect ? `[${ctx.words.spamPrefix}] ${subject}` : subject;
+    const mailBody = seen.suspect ? `${body}\n\n— ${ctx.words.spamNote}` : body;
+
     let delivered = false;
     if (recipient) {
       try {
         const result = await sendMail({
           to: recipient,
           ...(replyTo ? { replyTo } : {}),
-          ...contactEmail({ subject, from: replyTo || ctx.words.unknownSender, message: body, page: back }),
+          ...contactEmail({
+            subject: mailSubject, from: replyTo || ctx.words.unknownSender,
+            message: mailBody, page: back,
+          }),
         });
         delivered = !!result.delivered;
       } catch (err) {
         console.error('  [form] delivery failed:', err.message);
       }
     }
-    messages.create({ subject, from_email: replyTo, body, page: back, form_id: form.id, delivered });
+    messages.create({
+      subject, from_email: replyTo, body, page: back, form_id: form.id, delivered,
+      suspect: seen.suspect || '', fill_ms: seen.ms, touched: seen.touched,
+    });
 
     html(res, renderPage(page, { ...ctx, path: back }, { formSentId: placed.id }));
   });
