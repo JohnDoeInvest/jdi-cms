@@ -959,6 +959,26 @@ half-done. Kept short.
     keystroke landing on `<body>`.
   - The target is clamped when the section draws, not when rows change, so
     shrinking a table can never leave the picker aimed at a row that is gone.
+- **One branch, and a robot instead of a reviewer** (2026-10-01). Two pull
+  requests existed for about half an hour - the form guard and the CI
+  workflow - and Henrik ended them: two people develop this, he carries
+  several other projects, and a second repository with branches in it is a
+  headache he does not need. Everything lands on `main`.
+  - **What that costs is the gate before the merge**, and it is worth naming
+    rather than pretending it is free. Nobody now reads a change before it
+    becomes the trunk.
+  - **What pays for it** is that the two things which actually protect a
+    *visitor* are untouched. CI runs both suites on every push, so a broken
+    trunk is known in under a minute rather than discovered by a deployment.
+    And releasing is still a deliberate `git pull` and restart on the server:
+    nothing reaches a reader because somebody committed.
+  - **So the bar moves earlier.** With a pull request, red checks are a
+    branch nobody merged; on a single trunk they are everybody's problem
+    until fixed. Run both suites before pushing, not after.
+  - The history stays linear - both were rebased in, and the repository has
+    no merge commits in twenty-six. That is not nostalgia: on one trunk the
+    log *is* the record of what happened, and a merge bubble for work that
+    was never parallel only makes it harder to read.
 - **A backup no longer fails because one upload went.** Found 2026-10-01 by a
   test suite that had become intermittent. `buildBackup` walked the uploads,
   then read each file - and anything deleted between the walk and the read

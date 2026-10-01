@@ -95,6 +95,16 @@ uploads and a theme repo; everything else is this repository.
   `--ui-*` names and must be checked in light *and* dark.
 - **A default the panel can set is a stored number**, not a stylesheet rule, or
   the editor shows 0 for spacing the page actually has.
+- **Everything lands on `main`.** No feature branches. Decided by Henrik on
+  2026-10-01, after a short-lived two-branch experiment: two people develop
+  this, he carries several other projects, and branches here are a headache
+  he does not need. Commit to `main`, push, and let CI report.
+  - What replaces review-before-merge is **CI on every push** plus the fact
+    that **deployment is still a deliberate `git pull` and restart** on the
+    server. Nothing reaches a visitor because something was committed.
+  - So the bar for a push to `main` is higher, not lower: run `npm test` and
+    `npm run test:e2e` *before* pushing, not after. Red CI on `main` is a
+    broken shared trunk rather than a red pull request nobody has merged.
 - **Nothing a reader would notice goes live as it is typed.** Pages and
   articles keep draft and live copies; `publish()` is the only thing that
   writes what the public sees.
@@ -132,6 +142,11 @@ Two standing jobs with no ticket:
   clone is a fair test. Run them in a *deployment* too: a test that reads its
   expectations off the environment passes on a developer's copy and fails on
   the site, which has happened once already.
+  - **Both now run on GitHub as well**, on every push and pull request -
+    `.github/workflows/tests.yml`, unit tests on Node 22 and 26 and the e2e
+    suite against a fresh installation it builds itself. That is a second
+    machine that is nobody's, which is the half of "run it in a deployment"
+    that can be automated. It only ever reports; nothing deploys from it.
 - **One loose end from the move**: the theme repo is still in a personal
   account. That mattered mildly when it was the only thing there; since
   30 September that account also holds the private line, so the company's
