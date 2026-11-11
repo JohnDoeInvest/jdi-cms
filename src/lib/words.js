@@ -68,9 +68,11 @@ const en = {
 
   // A draft shown to somebody who is not signed in, through its preview link
   preview:        'Preview',
-  previewNote:    'This has not been published yet and may still change.',
-  previewChanges: 'This shows changes that have not been published yet.',
-  previewSame:    'This matches what is published.',
+  // Labels rather than sentences: the state, said the way the editor's own
+  // pills say it.
+  previewDraft:   'Draft',
+  previewChanges: 'Unpublished changes',
+  previewLive:    'Live',
   previewEnded:   'This preview has ended',
   previewEndedNote: 'The link is no longer active. Ask whoever sent it for a new one.',
 
@@ -122,9 +124,10 @@ const sv = {
   goHome:        'Till startsidan',
 
   preview:        'Förhandsvisning',
-  previewNote:    'Det här är inte publicerat ännu och kan fortfarande ändras.',
-  previewChanges: 'Här visas ändringar som inte är publicerade ännu.',
-  previewSame:    'Det här stämmer med det som är publicerat.',
+  previewDraft:   'Utkast',
+  previewChanges: 'Opublicerade ändringar',
+  // "Publicerad" rather than "Live", which is what a Swedish reader expects.
+  previewLive:    'Publicerad',
   previewEnded:   'Förhandsvisningen har upphört',
   previewEndedNote: 'Länken är inte längre aktiv. Be den som skickade den om en ny.',
 

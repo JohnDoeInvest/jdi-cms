@@ -54,7 +54,7 @@ test('the link shows the draft to somebody who is not signed in', async () => {
   const body = await res.text();
   assert.equal(res.status, 200);
   assert.ok(body.includes('Utkast till partnern'));
-  assert.ok(body.includes('This has not been published yet'));
+  assert.ok(body.includes('<strong>Preview</strong> – Draft'));
   // No way into the editor: it would only show them a sign-in page.
   assert.ok(!body.includes('Back to the editor'));
   assert.ok(!body.includes(`/cms/articles/${id}/edit`));
@@ -71,11 +71,11 @@ test('the same link, signed in, is the editor\'s own view with its way back', as
   let body = await link();
   assert.ok(body.includes('Back to the editor'));
   // A draft never published is not "what is live" - there is nothing live.
-  assert.ok(body.includes('not published yet'));
+  assert.ok(body.includes('<strong>Preview</strong> – Draft'));
   articles.publish(id);
-  assert.ok((await link()).includes('this matches what is live'));
+  assert.ok((await link()).includes('<strong>Preview</strong> – Live'));
   await save('articles', id, { blocks: text('Efteråt') });
-  assert.ok((await link()).includes('showing unpublished changes'));
+  assert.ok((await link()).includes('<strong>Preview</strong> – Unpublished changes'));
 });
 
 test('one link per round of changes: asking again gives the same one', () => {
@@ -94,11 +94,11 @@ test('publishing ends the link, forwards it to the article, and the editor gets 
   assert.equal(res.headers.get('location'), articles.byId(id).permalink);
 
   // The next round's link says what it is showing, and then shows it.
-  assert.ok((await (await stranger(state.preview)).text()).includes('This matches what is published.'));
+  assert.ok((await (await stranger(state.preview)).text()).includes('<strong>Preview</strong> – Live'));
   await save('articles', id, { blocks: text('Andra omgången') });
   const next = await (await stranger(state.preview)).text();
   assert.ok(next.includes('Andra omgången'));
-  assert.ok(next.includes('This shows changes that have not been published yet.'));
+  assert.ok(next.includes('<strong>Preview</strong> – Unpublished changes'));
 });
 
 test('a forwarded link stops forwarding when the article is taken down', async () => {
@@ -168,7 +168,7 @@ test('the reader sees the site\'s own language', async () => {
   try {
     const id = write('På svenska');
     const body = await (await stranger(previews.path('article', id))).text();
-    assert.ok(body.includes('Förhandsvisning'));
+    assert.ok(body.includes('<strong>Förhandsvisning</strong> – Utkast'));
   } finally {
     settings.set('site_language', was);
   }

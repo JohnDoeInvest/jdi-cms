@@ -155,25 +155,29 @@ function submenuFor(page) {
 
 /* ------------------------------------------------------------- rendering */
 
+/**
+ * Which of three states a preview is showing. Three, not two: a draft never
+ * published has no changes *to* anything, and with two it was announced as
+ * matching what is live.
+ */
+const previewState = (page, words) => (page.status !== 'published' ? words.previewDraft
+  : page.hasDraftChanges ? words.previewChanges : words.previewLive);
+
 /** Says, on the page, that this is not what the public sees. */
 const previewBanner = (page, kind, ctx) => {
-  /* Somebody reading through a preview link without being signed in gets
-     the site's own words and no way into the editor, which would only show
-     them a sign-in page. */
-  // Three states, not two: a draft never published has no changes *to*
-  // anything, and two states called it "what is live".
+  /* The same label either way. Somebody reading through a preview link
+     without being signed in gets it in the site's own words and no way into
+     the editor, which would only show them a sign-in page; the editor's own
+     bar is the CMS speaking, which is English whatever the site is. */
   if (!ctx.user) {
-    const note = page.status !== 'published' ? ctx.words.previewNote
-      : page.hasDraftChanges ? ctx.words.previewChanges : ctx.words.previewSame;
     return `<div class="preview-bar">
-  <span><strong>${esc(ctx.words.preview)}</strong> — ${esc(note)}</span>
+  <span><strong>${esc(ctx.words.preview)}</strong> – ${esc(previewState(page, ctx.words))}</span>
 </div>`;
   }
+  const english = siteWords('en');
   const editorPath = `/cms/${kind}/${page.id}/edit`;
   return `<div class="preview-bar">
-  <span><strong>Preview</strong> — ${page.status !== 'published'
-    ? 'not published yet'
-    : page.hasDraftChanges ? 'showing unpublished changes' : 'this matches what is live'}</span>
+  <span><strong>${esc(english.preview)}</strong> – ${esc(previewState(page, english))}</span>
   <a href="${editorPath}" data-back>Back to the editor</a>
   <script>
   /* Going back should return to the editor tab this was opened from, not

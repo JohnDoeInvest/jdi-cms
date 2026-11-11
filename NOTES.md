@@ -1093,14 +1093,18 @@ half-done. Kept short.
   at a time and survives a change of the site secret.
 
   **What the reader sees is what View always showed**: `draftView` through
-  `renderArticle`, the preview bar on top. The bar changes with who is
-  looking. Signed in, it is today's bar with its way back to the editor.
-  Not signed in, it offers no editor link, which would only lead to a
-  sign-in page, and says which of three things it is showing - something
-  not yet published, changes to something live, or exactly what is live,
-  which is what a fresh link shows the moment after a publish. Those are the
-  site speaking to a visitor, so they are `words.js`, in every language
-  there.
+  `renderArticle`, the preview bar on top, saying which of three states it
+  is showing - *Preview – Draft*, *Preview – Unpublished changes*, *Preview
+  – Live*. Labels rather than sentences, said the way the editor's pills
+  say it; the first version had sentences, and Macs cut them the same
+  morning. Three rather than two because a document never published has no
+  changes *to* anything: the old bar's two states announced every first
+  draft as matching what is live. The label is the same for everybody; who
+  is looking changes the rest. Signed in, it is in English, since that bar
+  is the CMS speaking, with its way back to the editor. Not signed in, it is
+  the site speaking, so `words.js` in every language there - *Utkast*,
+  *Opublicerade ändringar*, *Publicerad* - and there is no editor link,
+  which would only lead to a sign-in page.
 
   **What the link must not do:**
   - **Count a view.** The counter is a reader count; a reviewer refreshing a
