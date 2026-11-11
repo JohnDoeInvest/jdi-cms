@@ -160,6 +160,8 @@ const previewBanner = (page, kind, ctx) => {
   /* Somebody reading through a preview link without being signed in gets
      the site's own words and no way into the editor, which would only show
      them a sign-in page. */
+  // Three states, not two: a draft never published has no changes *to*
+  // anything, and two states called it "what is live".
   if (!ctx.user) {
     const note = page.status !== 'published' ? ctx.words.previewNote
       : page.hasDraftChanges ? ctx.words.previewChanges : ctx.words.previewSame;
@@ -169,9 +171,9 @@ const previewBanner = (page, kind, ctx) => {
   }
   const editorPath = `/cms/${kind}/${page.id}/edit`;
   return `<div class="preview-bar">
-  <span><strong>Preview</strong> — ${page.hasDraftChanges
-    ? 'showing unpublished changes'
-    : 'this matches what is live'}</span>
+  <span><strong>Preview</strong> — ${page.status !== 'published'
+    ? 'not published yet'
+    : page.hasDraftChanges ? 'showing unpublished changes' : 'this matches what is live'}</span>
   <a href="${editorPath}" data-back>Back to the editor</a>
   <script>
   /* Going back should return to the editor tab this was opened from, not

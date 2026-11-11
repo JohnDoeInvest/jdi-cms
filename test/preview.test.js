@@ -67,8 +67,15 @@ test('the link shows the draft to somebody who is not signed in', async () => {
 
 test('the same link, signed in, is the editor\'s own view with its way back', async () => {
   const id = write('Mitt eget');
-  const body = await (await editor(previews.path('article', id))).text();
+  const link = () => editor(previews.path('article', id)).then((res) => res.text());
+  let body = await link();
   assert.ok(body.includes('Back to the editor'));
+  // A draft never published is not "what is live" - there is nothing live.
+  assert.ok(body.includes('not published yet'));
+  articles.publish(id);
+  assert.ok((await link()).includes('this matches what is live'));
+  await save('articles', id, { blocks: text('Efteråt') });
+  assert.ok((await link()).includes('showing unpublished changes'));
 });
 
 test('one link per round of changes: asking again gives the same one', () => {
