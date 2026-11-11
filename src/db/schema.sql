@@ -247,6 +247,29 @@ CREATE TABLE IF NOT EXISTS schedules (
 );
 CREATE INDEX IF NOT EXISTS idx_schedules_due ON schedules(publish_at);
 
+-- -------------------------------------------------------- preview links
+-- The address View opens, which works for anybody who has it: the link is
+-- the permission. One per round of changes - a publish ends it and the
+-- editor mints the next. An ended link is kept, because one that ended by
+-- being published still forwards to the live document; one that was revoked
+-- leads nowhere. See NOTES, "A draft should be showable to someone without
+-- an account".
+CREATE TABLE IF NOT EXISTS preview_links (
+  token       TEXT    PRIMARY KEY,
+  page_id     INTEGER REFERENCES pages(id) ON DELETE CASCADE,
+  article_id  INTEGER REFERENCES articles(id) ON DELETE CASCADE,
+  created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
+  ended_at    TEXT,
+  -- NULL while current; 'published' or 'revoked' once it is not.
+  ended       TEXT,
+  CHECK ((page_id IS NULL) + (article_id IS NULL) = 1)
+);
+-- At most one current link per document.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_preview_page
+  ON preview_links(page_id) WHERE ended IS NULL AND page_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_preview_article
+  ON preview_links(article_id) WHERE ended IS NULL AND article_id IS NOT NULL;
+
 -- ---------------------------------------------------------------- menus
 CREATE TABLE IF NOT EXISTS menus (
   id         INTEGER PRIMARY KEY,

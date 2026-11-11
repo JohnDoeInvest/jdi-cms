@@ -66,6 +66,14 @@ const en = {
   notFoundNote:  'There is nothing at this address, or the page is not published yet.',
   goHome:        'Go to the home page',
 
+  // A draft shown to somebody who is not signed in, through its preview link
+  preview:        'Preview',
+  previewNote:    'This has not been published yet and may still change.',
+  previewChanges: 'This shows changes that have not been published yet.',
+  previewSame:    'This matches what is published.',
+  previewEnded:   'This preview has ended',
+  previewEndedNote: 'The link is no longer active. Ask whoever sent it for a new one.',
+
   // Furniture. Mostly aria-labels, which are words too: they are what a
   // screen reader says out loud, and saying "Main menu" to a Swedish visitor
   // is the same mistake as printing it on the page.
@@ -112,6 +120,13 @@ const sv = {
   notFound:      'Sidan hittades inte',
   notFoundNote:  'Det finns ingenting på den här adressen, eller så är sidan inte publicerad ännu.',
   goHome:        'Till startsidan',
+
+  preview:        'Förhandsvisning',
+  previewNote:    'Det här är inte publicerat ännu och kan fortfarande ändras.',
+  previewChanges: 'Här visas ändringar som inte är publicerade ännu.',
+  previewSame:    'Det här stämmer med det som är publicerat.',
+  previewEnded:   'Förhandsvisningen har upphört',
+  previewEndedNote: 'Länken är inte längre aktiv. Be den som skickade den om en ny.',
 
   skipToContent: 'Hoppa till innehållet',
   menu:          'Meny',

@@ -1,4 +1,3 @@
-import { config } from '../../config.js';
 import { html, redirect, parseForm, json, parseCookies } from '../../lib/http.js';
 import { esc, stripTags } from '../../lib/html.js';
 import { icon } from '../../views/icons.js';
@@ -6,17 +5,16 @@ import { cmsLayout, cmsHead } from '../../views/cms/layout.js';
 import {
   field, textarea, select, checkboxGroup, mediaPicker,
   emptyState, rowActions, statusPill, scheduleCell, dateCell, sortHeader, listSort, sortCookie,
-  linkOptions, richToolbar, editorActions, editorState, addressState,
+  linkOptions, richToolbar, editorActions, editorState, addressState, previewTools,
 } from '../../views/cms/parts.js';
 import { editorPanel } from '../../views/cms/editor.js';
-import { articles, categories, media, pages, slices, firstText, draftView } from '../../models.js';
+import { articles, categories, media, pages, slices, firstText, draftView, previews } from '../../models.js';
 import {
   normalizeBlocks, walkObjects, visibleBlocks, allowedInArticle, ARTICLE_OBJECT_ORDER,
 } from '../../lib/objects.js';
 import { theme } from '../../lib/theme.js';
 import { embedProviderList } from '../../lib/embed.js';
 import { publicMedia } from './media.js';
-import { buildContext, renderArticle } from '../site.js';
 import * as settings from '../../lib/settings.js';
 import { parsePublishAt, parsePublishedOn, localDay, nowSql } from '../../lib/util.js';
 
@@ -33,6 +31,9 @@ import { parsePublishAt, parsePublishedOn, localDay, nowSql } from '../../lib/ut
  * ways to put a picture into a CMS, which leaves an author guessing which
  * tool they are meant to reach for.
  */
+/** Where an article stands in the editor, with the preview link it should offer. */
+const state = (article) => ({ ...editorState(article), preview: previews.path('article', article.id) });
+
 export function registerArticles(router, guard) {
   /* ------------------------------------------------------------- the list */
 
@@ -213,8 +214,7 @@ export function registerArticles(router, guard) {
         <h1 class="h-page grow">Edit article</h1>
         <span class="pill pill--saved" data-save-state></span>
         <span data-status-pill>${statusPill(article.status, article.hasDraftChanges, article.schedule)}</span>
-        <a class="btn btn--sm" href="/cms/articles/${article.id}/preview" target="cms-preview"
-           title="Opens the draft, including changes that are not live">${icon('eye', 16)} View</a>
+        ${previewTools(previews.path('article', article.id), `/cms/api/articles/${article.id}/preview-link`)}
       </div>
 
       <details class="panel" style="padding:0;margin-bottom:var(--ui-s-5)">
@@ -342,7 +342,7 @@ export function registerArticles(router, guard) {
     // Which buttons belong here may have changed, and the server is what
     // decides - so it says, rather than the page being reloaded to find out.
     json(res, {
-      ...editorState(article),
+      ...state(article),
       /* Said, with the date it kept, rather than failing the save: the date
          rides every autosave, and one bad field must not stop the writing. */
       ...(dateRefused ? { dateRefused, publishedOn: localDay(draftView(article).published_at) } : {}),
@@ -353,32 +353,31 @@ export function registerArticles(router, guard) {
   router.get('/cms/api/articles/:id', guard((req, res, { params }) => {
     const article = articles.byId(Number(params.id));
     if (!article) return json(res, { error: 'That article does not exist' }, 404);
-    json(res, editorState(article));
+    json(res, state(article));
   }));
 
   router.post('/cms/api/articles/:id/discard', guard((req, res, { params }) => {
     const article = articles.discardDraft(Number(params.id));
     if (!article) return json(res, { error: 'That article does not exist' }, 404);
-    json(res, { ...editorState(article), blocks: article.draftBlocks, settingsReset: article.settingsReset });
+    json(res, { ...state(article), blocks: article.draftBlocks, settingsReset: article.settingsReset });
   }, 'editor'));
 
-  /**
-   * The draft, rendered through the site's own renderer behind the CMS guard.
-   * A draft is not public, and the session that may write an article is the
-   * session that may read it.
-   */
+  /* The old address of View - see the same route for pages. */
   router.get('/cms/articles/:id/preview', guard((req, res, { params }) => {
-    // The draft, whole - see the note on the page preview. Blocks alone were
-    // swapped in, so the title and lead shown were the published ones.
-    const article = draftView(articles.byId(Number(params.id)));
+    const article = articles.byId(Number(params.id));
     if (!article) {
       res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
       return res.end('No such article');
     }
-    const at = new URL(article.permalink, config.siteUrl);
-    const ctx = buildContext(req, at);
-    html(res, renderArticle({ ...article, blocks: article.draftBlocks, isPreview: true }, ctx));
+    redirect(res, previews.path('article', article.id), 302);
   }));
+
+  /* A new preview link - see the same route for pages. */
+  router.post('/cms/api/articles/:id/preview-link', guard((req, res, { params }) => {
+    const article = articles.byId(Number(params.id));
+    if (!article) return json(res, { error: 'That article does not exist' }, 404);
+    json(res, { preview: previews.revoke('article', article.id) });
+  }, 'editor'));
 
   router.post('/cms/articles/:id/delete', guard(async (req, res, { params }) => {
     articles.remove(Number(params.id));

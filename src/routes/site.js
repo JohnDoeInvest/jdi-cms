@@ -2,7 +2,9 @@ import { config } from '../config.js';
 import { html, json, redirect, parseForm, parseCookies } from '../lib/http.js';
 import { esc, joinHtml } from '../lib/html.js';
 import { isEmail } from '../lib/util.js';
-import { pages, articles, categories, menus, media, messages, forms } from '../models.js';
+import {
+  pages, articles, categories, menus, media, messages, forms, previews, draftView,
+} from '../models.js';
 import { walkObjects, visibleBlocks } from '../lib/objects.js';
 import { isCountry, dialFor, joinPhone, isDiallable } from '../lib/phone.js';
 import { siteLayout } from '../views/layout.js';
@@ -154,7 +156,17 @@ function submenuFor(page) {
 /* ------------------------------------------------------------- rendering */
 
 /** Says, on the page, that this is not what the public sees. */
-const previewBanner = (page, kind = 'pages') => {
+const previewBanner = (page, kind, ctx) => {
+  /* Somebody reading through a preview link without being signed in gets
+     the site's own words and no way into the editor, which would only show
+     them a sign-in page. */
+  if (!ctx.user) {
+    const note = page.status !== 'published' ? ctx.words.previewNote
+      : page.hasDraftChanges ? ctx.words.previewChanges : ctx.words.previewSame;
+    return `<div class="preview-bar">
+  <span><strong>${esc(ctx.words.preview)}</strong> — ${esc(note)}</span>
+</div>`;
+  }
   const editorPath = `/cms/${kind}/${page.id}/edit`;
   return `<div class="preview-bar">
   <span><strong>Preview</strong> — ${page.hasDraftChanges
@@ -236,7 +248,7 @@ export function renderPage(page, ctx, flash = {}) {
   return siteLayout({
     // A preview must never be mistaken for the live page, so it says so on
     // the page itself rather than only in the tab it was opened from.
-    banner: page.isPreview ? previewBanner(page) : '',
+    banner: page.isPreview ? previewBanner(page, 'pages', ctx) : '',
     title: page.meta_title || page.title,
     description: page.meta_description,
     // A link preview is drawn by whatever scraper fetched it, and not every
@@ -318,7 +330,7 @@ export function renderArticle(article, ctx) {
   </div>`;
 
   return siteLayout({
-    banner: article.isPreview ? previewBanner(article, 'articles') : '',
+    banner: article.isPreview ? previewBanner(article, 'articles', ctx) : '',
     title: article.title,
     description: article.lead,
     ogImage: article.image_filename ? mediaUrl(article.image_fallback || article.image_filename) : '',
@@ -521,6 +533,11 @@ export function registerSiteRoutes(router) {
       return html(res, renderArticle(article, ctx));
     }
 
+    // After both lookups, so a real page at this address always wins and
+    // the site's address space has no word reserved for the CMS.
+    const token = permalink.match(/^\/preview\/([^/]+)$/)?.[1];
+    if (token) return servePreview(req, res, token, ctx);
+
     notFound(res, ctx);
   });
 
@@ -549,6 +566,59 @@ export function registerSiteRoutes(router) {
     res.setHeader('Set-Cookie', unlockCookie(page.id, page.password, req));
     redirect(res, permalink);
   });
+}
+
+/* ---------------------------------------------------------- preview links */
+
+/**
+ * A draft, for anybody holding its link - see NOTES, "A draft should be
+ * showable to someone without an account".
+ *
+ * A current link shows the draft whole, as View always has, opening through
+ * a password on the page or section: the link is a stronger secret than the
+ * password, and whoever sent it meant it to be read. A link that ended by
+ * being published forwards to the document for as long as it is live, since
+ * that only ever leads somewhere public. Anything else has ended.
+ *
+ * Never counted as a view, never indexed, never cached: a link pasted
+ * somewhere public must not leave a draft in a search engine, and nothing in
+ * between may keep a copy past the moment the link ends.
+ */
+function servePreview(req, res, token, ctx) {
+  const link = previews.byToken(token);
+  if (!link) return notFound(res, ctx);
+  res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+  res.setHeader('Cache-Control', 'private, no-store');
+  const doc = link.page_id ? pages.byId(link.page_id) : articles.byId(link.article_id);
+  if (!doc) return notFound(res, ctx);
+
+  if (link.ended === 'published' && doc.status === 'published') return redirect(res, doc.permalink);
+  if (link.ended) return previewEnded(res, ctx);
+
+  /* The draft, whole. Blocks alone used to be swapped in and the rest read
+     from the live row - so once metadata started waiting for Publish, a
+     preview showed the published title, type and meta while claiming to show
+     what was about to be published. A preview that disagrees with what
+     Publish will do is worse than no preview. */
+  const draft = draftView(doc);
+  // Drawn as if at the document's own address, so menus and the trail
+  // light up as they will once it is out.
+  const at = buildContext(req, new URL(draft.permalink, config.siteUrl));
+  html(res, link.page_id
+    ? renderPage({ ...draft, blocks: draft.draftBlocks, isPreview: true }, at)
+    : renderArticle({ ...draft, blocks: draft.draftBlocks, isPreview: true }, at));
+}
+
+function previewEnded(res, ctx) {
+  html(res, siteLayout({
+    title: ctx.words.previewEnded,
+    content: `<div class="body-col"><div class="empty-state" style="margin-block:var(--s-9)">
+      <h2>${esc(ctx.words.previewEnded)}</h2>
+      <p>${esc(ctx.words.previewEndedNote)}</p>
+      <p><a class="btn" href="/">${esc(ctx.words.goHome)}</a></p>
+    </div></div>`,
+    ctx,
+  }), 410);
 }
 
 /* -------------------------------------------------------------------- 404 */

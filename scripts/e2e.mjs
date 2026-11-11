@@ -682,6 +682,21 @@ const draft = await cmsHtml(`/cms/articles/${articleId}/preview`);
 ok('page furniture is refused in an article',
   draft.includes('b-text') && !draft.includes('b-breadcrumbs') && !draft.includes('b-form'));
 
+/* View's address is the permission: it works for somebody who is not signed
+   in, which is why this fetch is bare. Run against a deployment, it is also
+   the check that whatever stands in front of the site lets it through. */
+const previewLink = (await cmsHtml(`/cms/articles/${articleId}/edit`))
+  .match(/href="(\/preview\/[A-Za-z0-9_-]{24})"/)?.[1];
+ok('View opens a preview link', !!previewLink);
+let bare = await fetch(BASE + previewLink, { redirect: 'manual' });
+ok('which shows the draft to somebody not signed in',
+  bare.status === 200 && (await bare.text()).includes('b-text'), String(bare.status));
+ok('and asks not to be indexed', bare.headers.get('x-robots-tag') === 'noindex, nofollow');
+r = await postJson(`/cms/api/articles/${articleId}/preview-link`, {});
+ok('a new link can be made', /^\/preview\//.test(r.body.preview || '') && r.body.preview !== previewLink);
+bare = await fetch(BASE + previewLink, { redirect: 'manual' });
+ok('and the old one stops showing anything', bare.status === 410, String(bare.status));
+
 /* -------------------------------------------------------------- categories */
 console.log('\n== Categories ==');
 r = await postForm('/cms/categories', { name: `${TAG} kategori` });

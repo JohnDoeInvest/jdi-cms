@@ -72,6 +72,7 @@ const PATHS = {
   spacer:      '<path d="M5 4h14M5 20h14"/><path d="M12 8v8"/><path d="m9 11 3-3 3 3M9 13l3 3 3-3"/>',
   formField:   '<rect x="3" y="8" width="18" height="8" rx="2"/><path d="M7 12h6"/>',
   parent:      '<path d="M12 19V7"/><path d="m7 11 5-5 5 5"/>',
+  refresh:     '<path d="M20 11.5A8 8 0 0 0 5.6 7"/><path d="M4 4v4h4"/><path d="M4 12.5A8 8 0 0 0 18.4 17"/><path d="M20 20v-4h-4"/>',
   clock:       '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
   sun:         '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/>',
   moon:        '<path d="M19.5 14.2A8 8 0 0 1 9.8 4.5a8 8 0 1 0 9.7 9.7Z"/>',

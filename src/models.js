@@ -6,6 +6,7 @@ import {
 } from './lib/objects.js';
 import { slugify, uniqueSlug, normalizePermalink, nowSql } from './lib/util.js';
 import { removeMediaFiles } from './lib/media.js';
+import { randomBytes } from 'node:crypto';
 
 /* ------------------------------------------------------------------ pages */
 
@@ -99,6 +100,51 @@ const draftSettings = (doc, keys) => JSON.stringify(keys.map((key) => draftView(
 
 const dropSchedule = (column, id) => run(`DELETE FROM schedules WHERE ${column} = ?`, id);
 const isScheduled = (column, id) => !!get(`SELECT 1 FROM schedules WHERE ${column} = ?`, id);
+
+/** A publish ends the round of changes a preview link was showing. */
+const endPreview = (column, id, how = 'published') =>
+  run(`UPDATE preview_links SET ended = ?, ended_at = ? WHERE ${column} = ? AND ended IS NULL`,
+    how, nowSql(), id);
+
+/* ---------------------------------------------------------- preview links */
+
+/** What a preview address looks like: 18 random bytes as base64url. */
+export const PREVIEW_TOKEN = /^[A-Za-z0-9_-]{24}$/;
+
+/**
+ * The address View opens, which works for anybody who has it. One link per
+ * round of changes: publishing ends it, and the next one is minted here the
+ * next time somebody asks - so a document nobody opens again carries no live
+ * link at all. See NOTES, "A draft should be showable to someone without an
+ * account".
+ *
+ * `kind` is 'page' or 'article'.
+ */
+export const previews = {
+  column: (kind) => (kind === 'page' ? 'page_id' : 'article_id'),
+
+  /** The current link's path for a document, minted when it has none. */
+  path(kind, id) {
+    const column = this.column(kind);
+    const row = get(`SELECT token FROM preview_links WHERE ${column} = ? AND ended IS NULL`, id);
+    if (row) return `/preview/${row.token}`;
+    const token = randomBytes(18).toString('base64url');
+    run(`INSERT INTO preview_links (token, ${column}, created_at) VALUES (?, ?, ?)`, token, id, nowSql());
+    return `/preview/${token}`;
+  },
+
+  /** End the current link without a forward, and hand back the next one. */
+  revoke(kind, id) {
+    endPreview(this.column(kind), id, 'revoked');
+    return this.path(kind, id);
+  },
+
+  /** A link and the document it belongs to, or null. */
+  byToken(token) {
+    if (!PREVIEW_TOKEN.test(String(token || ''))) return null;
+    return get('SELECT * FROM preview_links WHERE token = ?', token) || null;
+  },
+};
 
 /**
  * Put out everything that is due. The clock in server.js calls this.
@@ -404,6 +450,7 @@ export const pages = {
                             ${cols.map((c) => `, ${c} = ?`).join('')}
             WHERE id = ?`, nowSql(), nowSql(), ...cols.map((c) => pending[c]), id);
       dropSchedule('page_id', id);
+      endPreview('page_id', id);
     });
     return this.byId(id);
   },
@@ -469,6 +516,7 @@ export const pages = {
       page.scheduled_content, JSON.stringify(pending), page.schedule.at,
       ...cols.map((c) => scheduled[c]), id);
       dropSchedule('page_id', id);
+      endPreview('page_id', id);
     });
     return this.byId(id);
   },
@@ -854,6 +902,7 @@ export const articles = {
       // Subjects are rows elsewhere, so they are applied rather than copied.
       if (Array.isArray(pending.category_ids)) this.setCategories(id, pending.category_ids);
       dropSchedule('article_id', id);
+      endPreview('article_id', id);
     });
     return this.byId(id);
   },
@@ -913,6 +962,7 @@ export const articles = {
       article.schedule.at, ...cols.map((c) => scheduled[c]), id);
       if (Array.isArray(scheduled.category_ids)) this.setCategories(id, scheduled.category_ids);
       dropSchedule('article_id', id);
+      endPreview('article_id', id);
     });
     return this.byId(id);
   },

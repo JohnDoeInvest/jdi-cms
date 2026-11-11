@@ -5,18 +5,18 @@ import { cmsLayout, cmsHead } from '../../views/cms/layout.js';
 import {
   field, textarea, select, checkbox, emptyState, rowActions,
   statusPill, scheduleCell, dateCell, sortHeader, listSort, sortCookie,
-  mediaPicker, richToolbar, linkOptions, editorActions, editorState, addressState,
+  mediaPicker, richToolbar, linkOptions, editorActions, editorState, addressState, previewTools,
 } from '../../views/cms/parts.js';
-import { pages, templates, menus, media, slices, categories, forms, draftView, PAGE_TYPES } from '../../models.js';
+import {
+  pages, templates, menus, media, slices, categories, forms, draftView, PAGE_TYPES, previews,
+} from '../../models.js';
 import { normalizeBlocks, walkObjects, reIdBlocks, OBJECT_ORDER } from '../../lib/objects.js';
 import { editorPanel } from '../../views/cms/editor.js';
 import { publicMedia } from './media.js';
 import { theme } from '../../lib/theme.js';
 import { embedProviderList } from '../../lib/embed.js';
-import { buildContext, renderPage } from '../site.js';
 import { formFields } from '../../views/render.js';
 import { parsePublishAt } from '../../lib/util.js';
-import { config } from '../../config.js';
 
 /**
  * Page type: the frame a page draws in.
@@ -137,6 +137,9 @@ function metaFields(page, templateList, ogImage,
       extra: rides('use_first_image'),
     })}`;
 }
+
+/** Where a page stands in the editor, with the preview link it should offer. */
+const state = (page) => ({ ...editorState(page), preview: previews.path('page', page.id) });
 
 export function registerPages(router, guard) {
   /* ------------------------------------------------------- Frame 4.11 */
@@ -296,12 +299,7 @@ export function registerPages(router, guard) {
         <h1 class="h-page grow">Edit page</h1>
         <span class="pill pill--saved" data-save-state></span>
         <span data-status-pill>${statusPill(page.status, page.hasDraftChanges, page.schedule)}</span>
-        <!-- A named target, so clicking View again reuses the one preview tab
-             instead of opening another. No rel="noopener": the preview is our
-             own page, and it needs window.opener to hand focus back rather
-             than leaving a second editor tab behind every time. -->
-        <a class="btn btn--sm" href="/cms/preview/${page.id}" target="cms-preview"
-           title="Opens the draft, including changes that are not live">${icon('eye', 16)} View</a>
+        ${previewTools(previews.path('page', page.id), `/cms/api/pages/${page.id}/preview-link`)}
       </div>
 
       <details class="panel" style="padding:0;margin-bottom:var(--ui-s-5)" data-meta-editor>
@@ -472,7 +470,7 @@ export function registerPages(router, guard) {
 
     // Which buttons belong here may have changed, and the server is what
     // decides - so it says, rather than the page being reloaded to find out.
-    json(res, editorState(page));
+    json(res, state(page));
   }, 'editor'));
 
   /* Where a page stands, for an editor left open while its schedule came
@@ -480,32 +478,30 @@ export function registerPages(router, guard) {
   router.get('/cms/api/pages/:id', guard((req, res, { params }) => {
     const page = pages.byId(Number(params.id));
     if (!page) return json(res, { error: 'That page does not exist' }, 404);
-    json(res, editorState(page));
+    json(res, state(page));
   }));
 
   /**
-   * The draft, rendered exactly as the site would render it.
-   *
-   * Behind the CMS guard rather than behind a token: a draft is not public,
-   * and the session that may edit the page is the session that may see it.
-   * The rail's "View site" still opens the live page - one link for what
-   * visitors get, one for what you are about to give them.
+   * The old address of View, kept so anything that still opens it lands on
+   * the draft. The draft itself is served at its preview link now, which
+   * works for anybody who has it - see `servePreview` in site.js.
    */
   router.get('/cms/preview/:id', guard((req, res, { params }) => {
-    /* The draft, whole. Blocks alone used to be swapped in and the rest read
-       from the live row - so once metadata started waiting for Publish, a
-       preview showed the published page type, title and meta while claiming
-       to show what you were about to publish. A preview that disagrees with
-       what Publish will do is worse than no preview. */
-    const page = draftView(pages.byId(Number(params.id)));
+    const page = pages.byId(Number(params.id));
     if (!page) {
       res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
       return res.end('No such page');
     }
-    const at = new URL(page.permalink, config.siteUrl);
-    const ctx = buildContext(req, at);
-    html(res, renderPage({ ...page, blocks: page.draftBlocks, isPreview: true }, ctx));
+    redirect(res, previews.path('page', page.id), 302);
   }));
+
+  /* A new preview link, ending the current one without a forward: for a link
+     sent to the wrong person, who should stop seeing anything. */
+  router.post('/cms/api/pages/:id/preview-link', guard((req, res, { params }) => {
+    const page = pages.byId(Number(params.id));
+    if (!page) return json(res, { error: 'That page does not exist' }, 404);
+    json(res, { preview: previews.revoke('page', page.id) });
+  }, 'editor'));
 
   /* Throw the draft away and go back to what is live - or to what is
      scheduled. When settings came back as well as blocks, the editor has to
@@ -513,7 +509,7 @@ export function registerPages(router, guard) {
   router.post('/cms/api/pages/:id/discard', guard((req, res, { params }) => {
     const page = pages.discardDraft(Number(params.id));
     if (!page) return json(res, { error: 'That page does not exist' }, 404);
-    json(res, { ...editorState(page), blocks: page.draftBlocks, settingsReset: page.settingsReset });
+    json(res, { ...state(page), blocks: page.draftBlocks, settingsReset: page.settingsReset });
   }, 'editor'));
 
   router.get('/cms/api/pages/:id/usage', guard((req, res, { params }) => {

@@ -1034,6 +1034,107 @@ half-done. Kept short.
     that it holds the *private* line, the company's brand living beside it is
     exactly the confusion this separation exists to remove.
 
+- **A draft can be shown to someone without an account.** Raised and built
+  2026-11-11: an article written for a partner or a coworker wants their eyes
+  before it goes out, and until then the only way to see a draft was to be
+  signed in. Pages have it too, from the same day - asked for was articles,
+  and doing them alone would have made "why can I send this but not that" the
+  first question asked of it.
+
+  **The link is the permission.** The View button already opened the draft;
+  now the address it opens works for anybody who has it,
+  signed in or not, so sending a preview is copying the link View already
+  gives you. Nothing else is asked of the reader - no account, no password,
+  no code sent separately. It is "anyone with the link" in a shared document,
+  which people already understand, and it is the right weight: a guest
+  account is a sign-in a reviewer has to do once and forget, and a password
+  on the preview is a second secret to send down the same channel as the
+  first. A random address nobody can guess *is* the secret.
+
+  **One link per round of changes, not per article.** A link shows the draft
+  until the draft goes live, and then it is retired and View gets a new one.
+  "Until the article is published" generalises without changing: an article
+  already live and being edited has a draft too, and its preview link is the
+  link to *those* changes, retired when they go out. The new link is minted
+  the next time the editor opens rather than at publish, so an article nobody
+  touches again carries no live preview link at all.
+  - **Every publish retires it, the scheduled one included.** That has one
+    rough edge worth naming: a schedule publishes a *copy* of the draft, and
+    the draft may have moved on since. Those later changes are still not
+    live, but their reviewer's link is retired anyway and View shows the new
+    one. The alternative - retire only when nothing unpublished is left -
+    makes a link that survives a publish, which is harder to explain than
+    the rough edge it smooths. One rule: a publish ends a link.
+
+  **A retired link forwards to the live article.** Somebody opening an old
+  approval mail after the piece went out should land on the piece, not on an
+  error. **It forwards for as long as the document is live**, with no clock:
+  "a day or so" was the first thought, but the forward only ever leads to
+  what is already public, so expiring it would protect nothing and only break
+  links sitting in people's inboxes. Settled with Macs on the day. When the
+  document is not live - unpublished - the old link gets the ended page, a
+  410 in the site's own words; a deleted document takes its links with it
+  by cascade, and those are a plain 404.
+
+  **The circle arrows beside View cut it off.** A link sent to the wrong person,
+  or a reviewer who should no longer see it, needs ending without publishing.
+  That retires the link *without* a forward - the point is that the person
+  holding it stops seeing anything - so a retired link remembers how it
+  ended: `published` forwards, `revoked` does not.
+
+  **The address is `/preview/<token>`, with no reserved word.** The site has
+  no reserved paths beyond the ones its own files sit at; `/preview` would be
+  the first piece of the site's address space the CMS took for itself. So it
+  is checked in the catch-all *after* pages and articles: a real page at that
+  address always wins, and a token-shaped path that is neither is a preview
+  or a 404. The token is 18 random bytes from `node:crypto`, 24 characters of
+  base64url - 144 bits, nothing to guess. It is a stored row rather than an
+  HMAC like the page gate's cookie, because a stored row can be revoked one
+  at a time and survives a change of the site secret.
+
+  **What the reader sees is what View always showed**: `draftView` through
+  `renderArticle`, the preview bar on top. The bar changes with who is
+  looking. Signed in, it is today's bar with its way back to the editor.
+  Not signed in, it offers no editor link, which would only lead to a
+  sign-in page, and says which of three things it is showing - something
+  not yet published, changes to something live, or exactly what is live,
+  which is what a fresh link shows the moment after a publish. Those are the
+  site speaking to a visitor, so they are `words.js`, in every language
+  there.
+
+  **What the link must not do:**
+  - **Count a view.** The counter is a reader count; a reviewer refreshing a
+    draft is not one, and the existing preview never counted either.
+  - **Be indexed or cached.** `X-Robots-Tag: noindex` and
+    `Cache-Control: private, no-store` on every preview response, so a link
+    pasted somewhere public is not a draft in a search index, and nothing in
+    between keeps a copy past the moment it is retired.
+  - **Leak through a referrer.** A reviewer clicking a link inside the
+    article would hand the token to that site in the `Referer` header. The
+    site-wide `strict-origin-when-cross-origin` already sends only the
+    origin cross-site, so this is covered, and `test/preview.test.js`
+    checks the header so it stays so.
+
+  **Two things it does on purpose.** A chat app or a mail scanner fetching
+  the link to draw its preview card will see the draft's title and picture;
+  that is the recipient's own tool, and a GET changes nothing. And a link
+  opens through a password on the page the article sits under: the token is
+  a stronger secret than the section's password and whoever sent it meant it
+  to be read, which is the reasoning `isUnlocked` already applies to
+  `isPreview`.
+
+  **Storage**: a `preview_links` table - token, `page_id` or `article_id`
+  shaped exactly as `schedules` is, when it was made, when it ended and how.
+  One row per round of changes, which is a handful a year per document; a
+  partial unique index keeps it to one current link each. The old View
+  addresses, `/cms/preview/:id` and `/cms/articles/:id/preview`, redirect to
+  the current link, so anything that opens them still lands on the draft.
+
+  **A copy icon sits beside View**, because a link that can be right-clicked
+  and copied is one nobody finds by looking. It copies the whole address,
+  resolved in the browser - the editor is reached through the same host the
+  reader will use, so that is the one address certain to be right.
+
 ## Next up
 
 - **A form should be able to tell a person from a script.** Raised

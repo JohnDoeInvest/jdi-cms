@@ -444,7 +444,8 @@
   /* -------------------------------------------------------- copy links */
 
   onClick('[data-copy]', function (el) {
-    var value = el.dataset.copy;
+    // A path is copied as a whole address: it is going into a mail.
+    var value = new URL(el.dataset.copy, window.location.href).href;
     var done = function () { toast('Link copied'); };
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(value).then(done).catch(function () { fallbackCopy(value, done); });
@@ -452,6 +453,23 @@
       fallbackCopy(value, done);
     }
   });
+
+  /* A new preview link, ending the one before it. The editor swaps the link
+     in the same way when a publish hands it the next one. */
+  onClick('[data-preview-renew]', function (el) {
+    postForm(el.dataset.previewRenew, {}).then(function (res) {
+      setPreviewLink(res.preview);
+      toast('New link');
+    }).catch(function (err) { toast(err.message, 'error'); });
+  });
+
+  function setPreviewLink(path) {
+    if (!path) return;
+    var view = document.querySelector('[data-preview-view]');
+    var copy = document.querySelector('[data-preview-copy]');
+    if (view) view.setAttribute('href', path);
+    if (copy) copy.dataset.copy = path;
+  }
 
   function fallbackCopy(value, done) {
     var input = document.createElement('textarea');
@@ -1033,6 +1051,7 @@
     pickMedia: pickMedia,
     postForm: postForm,
     getJson: getJson,
+    setPreviewLink: setPreviewLink,
     escapeHtml: escapeHtml,
     initRichEditor: initRichEditor,
     onClick: onClick,

@@ -176,6 +176,25 @@ export const editorState = (doc) => ({
   actions: editorActions(doc),
 });
 
+/**
+ * View, and the link it opens, which works for anybody who has it - so the
+ * way to send a draft to somebody is to copy it. The circle arrows end the
+ * link without publishing, for one sent to the wrong person; publishing ends
+ * it too, and the editor is handed the next one with its state.
+ *
+ * A named target, so clicking View again reuses the one preview tab instead
+ * of opening another. No rel="noopener": the preview is our own page, and it
+ * needs window.opener to hand focus back rather than leaving a second editor
+ * tab behind every time.
+ */
+export const previewTools = (path, renew) => `
+        <a class="btn btn--sm" href="${esc(path)}" target="cms-preview" data-preview-view
+           title="Opens the draft, including changes that are not live">${icon('eye', 16)} View</a>
+        <button class="icon-btn" type="button" title="Copy link" data-copy="${esc(path)}"
+                data-preview-copy>${icon('copy', 16)}</button>
+        <button class="icon-btn" type="button" title="New link"
+                data-preview-renew="${esc(renew)}">${icon('refresh', 16)}</button>`;
+
 /* --------------------------------------------------------------- bits */
 
 /**

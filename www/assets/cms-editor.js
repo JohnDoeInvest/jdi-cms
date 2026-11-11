@@ -310,6 +310,8 @@
     swapHtml(document.querySelector('[data-status-pill]'), res.pill);
     swapHtml(document.querySelector('.cms-actions'), res.actions);
     if (res.address) setAddressState(res.address);
+    // A publish ends the preview link, and the next one comes back here.
+    if (res.preview) CMS.setPreviewLink(res.preview);
     watchSchedule(DATA.scheduledAt);
   }
 
